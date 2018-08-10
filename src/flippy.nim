@@ -1,11 +1,7 @@
+import math, os, strutils
 import stb_image/read as stbi
 import stb_image/write as stbiw
-import math
-import os
-import strutils
-import vmath
-import print
-import chroma
+import vmath, print, chroma
 
 
 type Image* = ref object
