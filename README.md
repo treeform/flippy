@@ -26,9 +26,9 @@ image.save("tests/lenna2.png")
 
 Converts
 
-![Alt text](test/lenna.png?raw=true "Title")
+![Alt text](tests/lenna.png?raw=true "Title")
 
 Into
 
-![Alt text](test/lenna2.png?raw=true "Title")
+![Alt text](tests/lenna2.png?raw=true "Title")
 
