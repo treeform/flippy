@@ -6,7 +6,7 @@ See api reference: https://treeform.github.io/flippy/
 
 Basic ussage:
 
-```lang=nim
+```nim
 import flippy, chroma, vmath
 
 var image = loadImage("tests/lenna.png")
