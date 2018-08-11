@@ -121,7 +121,7 @@ proc putRgba*(image: Image, x, y: int, rgb: ColorRGBA) =
     image.data[(image.width * y + x) * 3 + 0] = rgb.r
     image.data[(image.width * y + x) * 3 + 1] = rgb.g
     image.data[(image.width * y + x) * 3 + 2] = rgb.b
-  if image.channels == 4:
+  elif image.channels == 4:
     image.data[(image.width * y + x) * 4 + 0] = rgb.r
     image.data[(image.width * y + x) * 4 + 1] = rgb.g
     image.data[(image.width * y + x) * 4 + 2] = rgb.b
@@ -144,12 +144,14 @@ proc blit*(destImage: var Image, srcImage: Image, src, dest: Rect) =
       destImage.putRgba(dest.x + x, dest.y + y, rgba)
 
 
-proc drawLine*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
+proc line*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
   ## Draws a line from one at vec to to vec.
   var dx = to.x - at.x
   var dy = to.y - at.y
   var x = at.x
   while true:
+    if dx == 0:
+      break
     var y = at.y + dy * (x - at.x) / dx
     image.putRgba(x, y, rgba)
     if at.x < to.x:
@@ -163,6 +165,8 @@ proc drawLine*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
 
   var y = at.y
   while true:
+    if dy == 0:
+      break
     var x = at.x + dx * (y - at.y) / dy
     image.putRgba(x, y, rgba)
     if at.y < to.y:
