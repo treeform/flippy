@@ -5,6 +5,7 @@ import vmath, print, chroma
 
 
 type Image* = ref object
+  ## Main image object that hold the bitmap data.
   filePath*: string
   width*: int
   height*: int
@@ -14,6 +15,7 @@ type Image* = ref object
 
 
 proc `+`(a, b: ColorRGBA): ColorRGBA =
+  ## Adds two ColorRGBA together.
   result.r = a.r + b.r
   result.g = a.g + b.g
   result.b = a.b + b.b
@@ -21,6 +23,7 @@ proc `+`(a, b: ColorRGBA): ColorRGBA =
 
 
 proc `div`(rgba: ColorRGBA; i: uint8): ColorRGBA =
+  ## Integer devide a ColorRGBA by an integer amount.
   result.r = rgba.r div i
   result.g = rgba.g div i
   result.b = rgba.b div i
@@ -28,6 +31,7 @@ proc `div`(rgba: ColorRGBA; i: uint8): ColorRGBA =
 
 
 proc `$`*(image: Image): string =
+  ## Display the image path, size and channels.
   if image.filePath != nil:
     return "<Image " & image.filePath & " " & $image.width & "x" & $image.height & ":" & $image.channels & ">"
   else:
@@ -35,21 +39,25 @@ proc `$`*(image: Image): string =
 
 
 proc newImage*(width, height, channels: int): Image =
+  ## Create a new image with appropraite dimentions.
   var image = new Image
   image.width = width
   image.height = height
   image.channels = channels
-  image.data = newSeq[uint8](width*height*channels)
+  assert image.channels > 0 and image.channels <= 4
+  image.data = newSeq[uint8](width * height * channels)
   return image
 
 
 proc newImage*(filePath: string, width, height, channels: int): Image =
+  ## Creates a new image with a path.
   var image = newImage(width, height, channels)
   image.filePath = filePath
   return image
 
 
 proc loadImage*(filePath: string): Image =
+  ## Loads a png image.
   var image = new Image
   image.filePath = filePath
   image.data = stbi.load(
@@ -62,6 +70,7 @@ proc loadImage*(filePath: string): Image =
 
 
 proc save*(image: Image) =
+  ## Saves a png image.
   var sucess = writePNG(
     image.filePath,
     image.width,
@@ -73,11 +82,15 @@ proc save*(image: Image) =
 
 
 proc save*(image: Image, filePath: string) =
+  ## Sets image path and save the image.
   image.filePath = filePath
   image.save()
 
 
 proc getRgba*(image: Image, x, y: int): ColorRGBA =
+  ## Gets a color with (x, y) cordinates.
+  assert x >= 0 and x < image.width
+  assert y >= 0 and y < image.height
   if image.channels == 1:
     result.r = image.data[(image.width * y + x)]
     result.g = image.data[(image.width * y + x)]
@@ -96,10 +109,14 @@ proc getRgba*(image: Image, x, y: int): ColorRGBA =
 
 
 proc getRgba*(image: Image, x, y: float64): ColorRGBA =
+  ## Gets a pixel as (x, y) floats (does not do blending)
   getRgba(image, int x, int y)
 
 
 proc putRgba*(image: Image, x, y: int, rgb: ColorRGBA) =
+  ## Puts a ColorRGBA pixel back.
+  assert x >= 0 and x < image.width
+  assert y >= 0 and y < image.height
   if image.channels == 3:
     image.data[(image.width * y + x) * 3 + 0] = rgb.r
     image.data[(image.width * y + x) * 3 + 1] = rgb.g
@@ -114,10 +131,12 @@ proc putRgba*(image: Image, x, y: int, rgb: ColorRGBA) =
 
 
 proc putRgba*(image: Image, x, y: float64, rgb: ColorRGBA) =
+  ## Puts a ColorRGBA pixel back  as x, y floats (does not do blending).
   putRgba(image, int x, int y, rgb)
 
 
 proc blit*(destImage: var Image, srcImage: Image, src, dest: Rect) =
+  ## Blits rectange from onge image to the other image.
   assert src.w == dest.w and src.h == dest.h
   for x in 0..<src.w:
     for y in 0..<src.h:
@@ -126,7 +145,7 @@ proc blit*(destImage: var Image, srcImage: Image, src, dest: Rect) =
 
 
 proc drawLine*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
-  #echo "draw line", at, " to ", to
+  ## Draws a line from one at vec to to vec.
   var dx = to.x - at.x
   var dy = to.y - at.y
   var x = at.x
@@ -157,19 +176,20 @@ proc drawLine*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
 
 
 proc minifyBy2*(image: Image): Image =
+  ## Scales the image down by a factor of 2.
   result = newImage(image.width div 2, image.height div 2, image.channels)
   for x in 0..<result.width:
     for y in 0..<result.height:
       var rgba =
-          image.getRgba(x*2+0, y*2+0) div 4 +
-          image.getRgba(x*2+1, y*2+0) div 4 +
-          image.getRgba(x*2+1, y*2+1) div 4 +
-          image.getRgba(x*2+0, y*2+1) div 4
-
+          image.getRgba(x * 2 + 0, y * 2 + 0) div 4 +
+          image.getRgba(x * 2 + 1, y * 2 + 0) div 4 +
+          image.getRgba(x * 2 + 1, y * 2 + 1) div 4 +
+          image.getRgba(x * 2 + 0, y * 2 + 1) div 4
       result.putRgba(x, y, rgba)
 
 
 proc magnify*(image: Image, scale: int): Image =
+  ## Scales image image up by an integer scale.
   result = newImage(image.filePath, image.width * scale, image.height * scale, image.channels)
   for x in 0..<result.width:
     for y in 0..<result.height:
@@ -179,6 +199,7 @@ proc magnify*(image: Image, scale: int): Image =
 
 
 proc fill*(image: Image, rgb: ColorRgba) =
+  ## Fills the image with a solid color.
   for x in 0..<image.width:
     for y in 0..<image.height:
       if image.channels == 1:
