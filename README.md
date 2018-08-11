@@ -17,7 +17,7 @@ image.putRgba(10, 10, rgba(255, 0, 0, 255))
 
 blit(image, image, rect(0, 0, 100, 100), rect(100, 100, 100, 100))
 
-image.line(vec2(11, 11) , vec2(100, 100), rgba(0, 0, 0, 255))
+image.line(vec2(11, 11), vec2(100, 100), rgba(0, 0, 0, 255))
 
 var bigImage = image.magnify(2)
 

@@ -11,7 +11,7 @@ image.putRgba(10, 10, rgba(255, 0, 0, 255))
 # blit a rectangular part from one place to another
 blit(image, image, rect(0, 0, 100, 100), rect(100, 100, 100, 100))
 # draw a line
-image.line(vec2(11, 11) , vec2(100, 100), rgba(0, 0, 0, 255))
+image.line(vec2(11, 11), vec2(100, 100), rgba(0, 0, 0, 255))
 # magnify image by 2
 var bigImage = image.magnify(2)
 # save the image to a file
