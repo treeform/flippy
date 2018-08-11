@@ -179,8 +179,8 @@ proc line*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
         break
 
 
-proc minifyBy2*(image: Image): Image =
-  ## Scales the image down by a factor of 2.
+proc minifyBy2(image: Image): Image =
+  ## Scales the image down by an integer scale.
   result = newImage(image.width div 2, image.height div 2, image.channels)
   for x in 0..<result.width:
     for y in 0..<result.height:
@@ -190,6 +190,13 @@ proc minifyBy2*(image: Image): Image =
           image.getRgba(x * 2 + 1, y * 2 + 1) div 4 +
           image.getRgba(x * 2 + 0, y * 2 + 1) div 4
       result.putRgba(x, y, rgba)
+
+
+proc minify*(image: Image, scale: int): Image =
+  ## Scales the image down by an integer scale.
+  result = image
+  for i in 1..<scale:
+    result = result.minifyBy2()
 
 
 proc magnify*(image: Image, scale: int): Image =

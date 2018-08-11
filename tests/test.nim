@@ -12,7 +12,7 @@ image.putRgba(10, 10, rgba(255, 0, 0, 255))
 blit(image, image, rect(0, 0, 100, 100), rect(100, 100, 100, 100))
 # draw a line
 image.line(vec2(11, 11), vec2(100, 100), rgba(0, 0, 0, 255))
-# magnify image by 2
-var bigImage = image.magnify(2)
+# minify image by 2 or 1/2 or scale by 50%
+image = image.minify(2)
 # save the image to a file
 image.save("tests/lenna2.png")
