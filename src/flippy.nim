@@ -35,7 +35,7 @@ proc `$`*(image: Image): string =
   if image.filePath != nil:
     return "<Image " & image.filePath & " " & $image.width & "x" & $image.height & ":" & $image.channels & ">"
   else:
-    return "<Image empty>"
+    return "<Image " & $image.width & "x" & $image.height & ":" & $image.channels & ">"
 
 
 proc newImage*(width, height, channels: int): Image =
@@ -115,8 +115,8 @@ proc getRgba*(image: Image, x, y: float64): ColorRGBA =
 
 proc putRgba*(image: Image, x, y: int, rgb: ColorRGBA) =
   ## Puts a ColorRGBA pixel back.
-  assert x >= 0 and x < image.width
-  assert y >= 0 and y < image.height
+  if not(x >= 0 and x < image.width): return
+  if not(y >= 0 and y < image.height): return
   if image.channels == 3:
     image.data[(image.width * y + x) * 3 + 0] = rgb.r
     image.data[(image.width * y + x) * 3 + 1] = rgb.g
