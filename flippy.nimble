@@ -10,6 +10,6 @@ srcDir        = "src"
 
 requires "nim >= 0.18.1"
 requires "vmath >= 0.1.0"
-requires "chroma >= 0.1.0"
+requires "chroma >= 0.0.1"
 requires "print >= 0.1.0"
 requires "stb_image >= 2.1"
