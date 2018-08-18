@@ -138,10 +138,10 @@ proc putRgba*(image: Image, x, y: float64, rgb: ColorRGBA) =
 proc blit*(destImage: var Image, srcImage: Image, src, dest: Rect) =
   ## Blits rectange from onge image to the other image.
   assert src.w == dest.w and src.h == dest.h
-  for x in 0..<src.w:
-    for y in 0..<src.h:
-      var rgba = srcImage.getRgba(src.x + x, src.y + y)
-      destImage.putRgba(dest.x + x, dest.y + y, rgba)
+  for x in 0..<int(src.w):
+    for y in 0..<int(src.h):
+      var rgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
+      destImage.putRgba(int(dest.x) + x, int(dest.y) + y, rgba)
 
 
 proc line*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
