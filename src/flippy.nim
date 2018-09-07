@@ -32,7 +32,7 @@ proc `div`(rgba: ColorRGBA; i: uint8): ColorRGBA =
 
 proc `$`*(image: Image): string =
   ## Display the image path, size and channels.
-  if image.filePath != nil:
+  if image.filePath.len > 0:
     return "<Image " & image.filePath & " " & $image.width & "x" & $image.height & ":" & $image.channels & ">"
   else:
     return "<Image " & $image.width & "x" & $image.height & ":" & $image.channels & ">"
@@ -40,7 +40,7 @@ proc `$`*(image: Image): string =
 
 proc newImage*(width, height, channels: int): Image =
   ## Create a new image with appropraite dimentions.
-  var image = new Image
+  var image = Image()
   image.width = width
   image.height = height
   image.channels = channels
@@ -58,7 +58,7 @@ proc newImage*(filePath: string, width, height, channels: int): Image =
 
 proc loadImage*(filePath: string): Image =
   ## Loads a png image.
-  var image = new Image
+  var image = Image()
   image.filePath = filePath
   image.data = stbi.load(
     image.filePath,
