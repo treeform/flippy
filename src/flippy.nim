@@ -95,10 +95,12 @@ proc getRgba*(image: Image, x, y: int): ColorRGBA =
     result.r = image.data[(image.width * y + x)]
     result.g = image.data[(image.width * y + x)]
     result.b = image.data[(image.width * y + x)]
+    result.a = 255
   elif image.channels == 3:
     result.r = image.data[(image.width * y + x) * 3 + 0]
     result.g = image.data[(image.width * y + x) * 3 + 1]
     result.b = image.data[(image.width * y + x) * 3 + 2]
+    result.a = 255
   elif image.channels == 4:
     result.r = image.data[(image.width * y + x) * 4 + 0]
     result.g = image.data[(image.width * y + x) * 4 + 1]
@@ -142,6 +144,32 @@ proc blit*(destImage: var Image, srcImage: Image, src, dest: Rect) =
     for y in 0..<int(src.h):
       var rgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
       destImage.putRgba(int(dest.x) + x, int(dest.y) + y, rgba)
+
+
+proc inside*(image: Image, x, y: int): bool =
+  x >= 0 and x < image.width and y >= 0 and y < image.height
+
+
+proc blitWithAlpha*(destImage: var Image, srcImage: Image, mat: Mat4) =
+  ## Blits one image onto another using matrix with alpha blending
+  let matInv = mat.inverse()
+  for x in 0..<int(destImage.width):
+    for y in 0..<int(destImage.height):
+      let destV = vec3(float32 x, float32 y, 0)
+      let srcV = matInv * destV
+      # TODO: do bounding box optimization
+      if srcImage.inside(int srcV.x, int srcV.y):
+        var rgba = srcImage.getRgba(int srcV.x, int srcV.y)
+        if rgba.a == uint8(255):
+          destImage.putRgba(x, y, rgba)
+        elif rgba.a > uint8(0):
+          let destRgba = destImage.getRgba(x, y)
+          let a = float(rgba.a)/255.0
+          rgba.r = uint8(float(destRgba.r) * (1-a) + float(rgba.r) * a)
+          rgba.g = uint8(float(destRgba.g) * (1-a) + float(rgba.g) * a)
+          rgba.b = uint8(float(destRgba.b) * (1-a) + float(rgba.b) * a)
+          rgba.a = 255
+          destImage.putRgba(x, y, rgba)
 
 
 proc line*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
