@@ -87,7 +87,12 @@ proc save*(image: Image, filePath: string) =
   image.save()
 
 
-proc getRgba*(image: Image, x, y: int): ColorRGBA =
+proc inside*(image: Image, x, y: int): bool =
+  ## Returns true if x,y is inside the image
+  x >= 0 and x < image.width and y >= 0 and y < image.height
+
+
+proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
   ## Gets a color with (x, y) cordinates.
   assert x >= 0 and x < image.width
   assert y >= 0 and y < image.height
@@ -111,14 +116,18 @@ proc getRgba*(image: Image, x, y: int): ColorRGBA =
 
 
 proc getRgba*(image: Image, x, y: float64): ColorRGBA =
-  ## Gets a pixel as (x, y) floats (does not do blending)
+  ## Gets a pixel as (x, y) floats
   getRgba(image, int x, int y)
 
 
-proc putRgba*(image: Image, x, y: int, rgb: ColorRGBA) =
+proc getRgbaSafe*(image: Image, x, y: int): ColorRGBA =
+  ## Gets a pixel as (x, y) but returns transperancy if next sampled outside
+  if image.inside(x, y):
+    return image.getRgba(x, y)
+
+
+proc putRgba*(image: Image, x, y: int, rgb: ColorRGBA) {.inline.} =
   ## Puts a ColorRGBA pixel back.
-  if not(x >= 0 and x < image.width): return
-  if not(y >= 0 and y < image.height): return
   if image.channels == 3:
     image.data[(image.width * y + x) * 3 + 0] = rgb.r
     image.data[(image.width * y + x) * 3 + 1] = rgb.g
@@ -137,6 +146,12 @@ proc putRgba*(image: Image, x, y: float64, rgb: ColorRGBA) =
   putRgba(image, int x, int y, rgb)
 
 
+proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) =
+  ## Puts pixel onto the image or safly ignores this command if pixel is outside the image
+  if image.inside(x, y):
+    image.putRgba(x, y, rgba)
+
+
 proc blit*(destImage: var Image, srcImage: Image, src, dest: Rect) =
   ## Blits rectange from onge image to the other image.
   assert src.w == dest.w and src.h == dest.h
@@ -146,18 +161,54 @@ proc blit*(destImage: var Image, srcImage: Image, src, dest: Rect) =
       destImage.putRgba(int(dest.x) + x, int(dest.y) + y, rgba)
 
 
-proc inside*(image: Image, x, y: int): bool =
-  x >= 0 and x < image.width and y >= 0 and y < image.height
+proc computeBounds(destImage: var Image, srcImage: Image, mat: Mat4, matInv: Mat4): (int, int, int, int) =
+  # compute the bounds
+  let
+    bounds = @[
+      mat * vec3(-1, -1, 0),
+      mat * vec3(-1, float32 srcImage.height + 1, 0),
+      mat * vec3(float32 srcImage.width + 1, -1, 0),
+      mat * vec3(float32 srcImage.width + 1, float32 srcImage.height + 1, 0)
+    ]
+  var
+    boundsX = newSeq[float32](4)
+    boundsY = newSeq[float32](4)
+  for v in bounds:
+    boundsX.add(v.x)
+    boundsY.add(v.y)
+  let
+    xStart = max(int min(boundsX), 0)
+    yStart = max(int min(boundsY), 0)
+    xEnd = min(int max(boundsX), destImage.width)
+    yEnd = min(int max(boundsY), destImage.height)
+  return (xStart, yStart, xEnd, yEnd)
+
+
+proc blit*(destImage: var Image, srcImage: Image, mat: Mat4) =
+  ## Blits one image onto another using matrix with alpha blending
+  let matInv = mat.inverse()
+  let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
+
+  # fill the bounding rectangle
+  for x in xStart..<xEnd:
+    for y in yStart..<yEnd:
+      let destV = vec3(float32 x, float32 y, 0)
+      let srcV = matInv * destV
+      if srcImage.inside(int srcV.x, int srcV.y):
+        var rgba = srcImage.getRgba(int srcV.x, int srcV.y)
+        destImage.putRgba(x, y, rgba)
 
 
 proc blitWithAlpha*(destImage: var Image, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending
   let matInv = mat.inverse()
-  for x in 0..<int(destImage.width):
-    for y in 0..<int(destImage.height):
+  let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
+
+  # fill the bounding rectangle
+  for x in xStart..<xEnd:
+    for y in yStart..<yEnd:
       let destV = vec3(float32 x, float32 y, 0)
       let srcV = matInv * destV
-      # TODO: do bounding box optimization
       if srcImage.inside(int srcV.x, int srcV.y):
         var rgba = srcImage.getRgba(int srcV.x, int srcV.y)
         if rgba.a == uint8(255):
@@ -170,6 +221,22 @@ proc blitWithAlpha*(destImage: var Image, srcImage: Image, mat: Mat4) =
           rgba.b = uint8(float(destRgba.b) * (1-a) + float(rgba.b) * a)
           rgba.a = 255
           destImage.putRgba(x, y, rgba)
+
+
+proc blitWithMask*(destImage: var Image, srcImage: Image, mat: Mat4, color: ColorRGBA) =
+  ## Blits one image onto another using matrix with masking color
+  let matInv = mat.inverse()
+  let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
+
+  # fill the bounding rectangle
+  for x in xStart..<xEnd:
+    for y in yStart..<yEnd:
+      let destV = vec3(float32 x, float32 y, 0)
+      let srcV = matInv * destV
+      if srcImage.inside(int srcV.x, int srcV.y):
+        let rgba = srcImage.getRgba(int srcV.x, int srcV.y)
+        if rgba.a > uint8 0:
+          destImage.putRgba(x, y, color)
 
 
 proc line*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
