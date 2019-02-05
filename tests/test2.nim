@@ -30,4 +30,4 @@ main.blitWithAlpha(
 )
 
 
-main.save("tests/lenna3.png")
+main.save("tests/composed.png")

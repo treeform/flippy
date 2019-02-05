@@ -184,6 +184,10 @@ proc computeBounds(destImage: var Image, srcImage: Image, mat: Mat4, matInv: Mat
   return (xStart, yStart, xEnd, yEnd)
 
 
+proc roundPixelVec(v: Vec3): Vec2 =
+  vec2(round(v.x), round(v.y))
+
+
 proc blit*(destImage: var Image, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending
   let matInv = mat.inverse()
@@ -192,8 +196,8 @@ proc blit*(destImage: var Image, srcImage: Image, mat: Mat4) =
   # fill the bounding rectangle
   for x in xStart..<xEnd:
     for y in yStart..<yEnd:
-      let destV = vec3(float32 x, float32 y, 0)
-      let srcV = matInv * destV
+      let destV =  vec3(float32(x) + 0.5, float32(y) + 0.5, 0)
+      let srcV = roundPixelVec(matInv * destV)
       if srcImage.inside(int srcV.x, int srcV.y):
         var rgba = srcImage.getRgba(int srcV.x, int srcV.y)
         destImage.putRgba(x, y, rgba)
@@ -205,10 +209,13 @@ proc blitWithAlpha*(destImage: var Image, srcImage: Image, mat: Mat4) =
   let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
 
   # fill the bounding rectangle
+  let start = matInv * vec3(0.5, 0.5, 0)
+  let stepX = matInv * vec3(1.5, 0.5, 0) - start
+  let stepY = matInv * vec3(0.5, 1.5, 0) - start
+
   for x in xStart..<xEnd:
     for y in yStart..<yEnd:
-      let destV = vec3(float32 x, float32 y, 0)
-      let srcV = matInv * destV
+      let srcV = roundPixelVec(start + stepX * float32(x) + stepY * float32(y))
       if srcImage.inside(int srcV.x, int srcV.y):
         var rgba = srcImage.getRgba(int srcV.x, int srcV.y)
         if rgba.a == uint8(255):
@@ -231,8 +238,8 @@ proc blitWithMask*(destImage: var Image, srcImage: Image, mat: Mat4, color: Colo
   # fill the bounding rectangle
   for x in xStart..<xEnd:
     for y in yStart..<yEnd:
-      let destV = vec3(float32 x, float32 y, 0)
-      let srcV = matInv * destV
+      let destV =  vec3(float32(x) + 0.5, float32(y) + 0.5, 0)
+      let srcV = roundPixelVec(matInv * destV)
       if srcImage.inside(int srcV.x, int srcV.y):
         let rgba = srcImage.getRgba(int srcV.x, int srcV.y)
         if rgba.a > uint8 0:
@@ -248,7 +255,7 @@ proc line*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
     if dx == 0:
       break
     var y = at.y + dy * (x - at.x) / dx
-    image.putRgba(x, y, rgba)
+    image.putRgbaSafe(int x, int y, rgba)
     if at.x < to.x:
       x += 1
       if x > to.x:
@@ -263,7 +270,7 @@ proc line*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
     if dy == 0:
       break
     var x = at.x + dx * (y - at.y) / dy
-    image.putRgba(x, y, rgba)
+    image.putRgbaSafe(int x, int y, rgba)
     if at.y < to.y:
       y += 1
       if y > to.y:
