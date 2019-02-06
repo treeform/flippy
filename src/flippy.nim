@@ -328,3 +328,11 @@ proc fill*(image: Image, rgb: ColorRgba) =
         image.data[(image.width * y + x) * 4 + 3] = rgb.a
       else:
         raise newException(Exception, "File format not supported")
+
+
+proc getSubImage*(image: Image, x, y, w, h: int): Image =
+  ## Gets a sub image of the main image
+  result = newImage(w, h, image.channels)
+  for x2 in 0..<w:
+    for y2 in 0..<h:
+      result.putRgba(x2, y2, image.getRgba(x2 + x, y2 + y))
