@@ -87,7 +87,7 @@ proc save*(image: Image, filePath: string) =
   image.save()
 
 
-proc inside*(image: Image, x, y: int): bool =
+proc inside*(image: Image, x, y: int): bool {.inline.} =
   ## Returns true if x,y is inside the image
   x >= 0 and x < image.width and y >= 0 and y < image.height
 
@@ -115,12 +115,12 @@ proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
     quit("not supported " & $image)
 
 
-proc getRgba*(image: Image, x, y: float64): ColorRGBA =
+proc getRgba*(image: Image, x, y: float64): ColorRGBA {.inline.} =
   ## Gets a pixel as (x, y) floats
   getRgba(image, int x, int y)
 
 
-proc getRgbaSafe*(image: Image, x, y: int): ColorRGBA =
+proc getRgbaSafe*(image: Image, x, y: int): ColorRGBA {.inline.} =
   ## Gets a pixel as (x, y) but returns transperancy if next sampled outside
   if image.inside(x, y):
     return image.getRgba(x, y)
@@ -141,12 +141,12 @@ proc putRgba*(image: Image, x, y: int, rgb: ColorRGBA) {.inline.} =
     quit("not supported")
 
 
-proc putRgba*(image: Image, x, y: float64, rgb: ColorRGBA) =
+proc putRgba*(image: Image, x, y: float64, rgb: ColorRGBA) {.inline.} =
   ## Puts a ColorRGBA pixel back  as x, y floats (does not do blending).
   putRgba(image, int x, int y, rgb)
 
 
-proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) =
+proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
   ## Puts pixel onto the image or safly ignores this command if pixel is outside the image
   if image.inside(x, y):
     image.putRgba(x, y, rgba)
@@ -184,7 +184,8 @@ proc computeBounds(destImage: var Image, srcImage: Image, mat: Mat4, matInv: Mat
   return (xStart, yStart, xEnd, yEnd)
 
 
-proc roundPixelVec(v: Vec3): Vec2 =
+proc roundPixelVec(v: Vec3): Vec2 {.inline.} =
+  ## Rounds vector to pixel center
   vec2(round(v.x), round(v.y))
 
 
@@ -208,16 +209,17 @@ proc blitWithAlpha*(destImage: var Image, srcImage: Image, mat: Mat4) =
   let matInv = mat.inverse()
   let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
 
-  # fill the bounding rectangle
+  # compute movement vectors
   let start = matInv * vec3(0.5, 0.5, 0)
   let stepX = matInv * vec3(1.5, 0.5, 0) - start
   let stepY = matInv * vec3(0.5, 1.5, 0) - start
 
+  # fill the bounding rectangle
   for x in xStart..<xEnd:
     for y in yStart..<yEnd:
       let srcV = roundPixelVec(start + stepX * float32(x) + stepY * float32(y))
       if srcImage.inside(int srcV.x, int srcV.y):
-        var rgba = srcImage.getRgba(int srcV.x, int srcV.y)
+        var rgba = srcImage.getRgba(srcV.x, srcV.y)
         if rgba.a == uint8(255):
           destImage.putRgba(x, y, rgba)
         elif rgba.a > uint8(0):
@@ -235,13 +237,17 @@ proc blitWithMask*(destImage: var Image, srcImage: Image, mat: Mat4, color: Colo
   let matInv = mat.inverse()
   let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
 
+  # compute movement vectors
+  let start = matInv * vec3(0.5, 0.5, 0)
+  let stepX = matInv * vec3(1.5, 0.5, 0) - start
+  let stepY = matInv * vec3(0.5, 1.5, 0) - start
+
   # fill the bounding rectangle
   for x in xStart..<xEnd:
     for y in yStart..<yEnd:
-      let destV =  vec3(float32(x) + 0.5, float32(y) + 0.5, 0)
-      let srcV = roundPixelVec(matInv * destV)
+      let srcV = roundPixelVec(start + stepX * float32(x) + stepY * float32(y))
       if srcImage.inside(int srcV.x, int srcV.y):
-        let rgba = srcImage.getRgba(int srcV.x, int srcV.y)
+        let rgba = srcImage.getRgba(srcV.x, srcV.y)
         if rgba.a > uint8 0:
           destImage.putRgba(x, y, color)
 
