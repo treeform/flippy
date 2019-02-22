@@ -319,21 +319,28 @@ proc magnify*(image: Image, scale: int): Image =
 
 proc fill*(image: Image, rgb: ColorRgba) =
   ## Fills the image with a solid color.
-  for x in 0..<image.width:
-    for y in 0..<image.height:
-      if image.channels == 1:
-         image.data[(image.width * y + x)] = rgb.a
-      elif image.channels == 3:
-        image.data[(image.width * y + x) * 3 + 0] = rgb.r
-        image.data[(image.width * y + x) * 3 + 1] = rgb.g
-        image.data[(image.width * y + x) * 3 + 2] = rgb.b
-      elif image.channels == 4:
-        image.data[(image.width * y + x) * 4 + 0] = rgb.r
-        image.data[(image.width * y + x) * 4 + 1] = rgb.g
-        image.data[(image.width * y + x) * 4 + 2] = rgb.b
-        image.data[(image.width * y + x) * 4 + 3] = rgb.a
-      else:
-        raise newException(Exception, "File format not supported")
+  if image.channels == 1:
+    var i = 0
+    while i < image.data.len:
+      image.data[i + 0] = rgb.a
+      i += 1
+  elif image.channels == 3:
+    var i = 0
+    while i < image.data.len:
+      image.data[i + 0] = rgb.r
+      image.data[i + 1] = rgb.g
+      image.data[i + 2] = rgb.b
+      i += 3
+  elif image.channels == 4:
+    var i = 0
+    while i < image.data.len:
+      image.data[i + 0] = rgb.r
+      image.data[i + 1] = rgb.g
+      image.data[i + 2] = rgb.b
+      image.data[i + 3] = rgb.a
+      i += 4
+  else:
+    raise newException(Exception, "File format not supported")
 
 
 proc getSubImage*(image: Image, x, y, w, h: int): Image =
