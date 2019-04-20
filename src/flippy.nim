@@ -152,16 +152,39 @@ proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
     image.putRgba(x, y, rgba)
 
 
-proc blit*(destImage: var Image, srcImage: Image, src, dest: Rect) =
-  ## Blits rectange from onge image to the other image.
+proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
+  ## Blits rectange from one image to the other image.
   assert src.w == dest.w and src.h == dest.h
   for x in 0..<int(src.w):
     for y in 0..<int(src.h):
       var rgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
-      destImage.putRgba(int(dest.x) + x, int(dest.y) + y, rgba)
+      destImage.putRgbaSafe(int(dest.x) + x, int(dest.y) + y, rgba)
 
 
-proc computeBounds(destImage: var Image, srcImage: Image, mat: Mat4, matInv: Mat4): (int, int, int, int) =
+proc blitWithMask*(destImage: Image, srcImage: Image, src, dest: Rect, color: ColorRGBA) =
+  ## Blits rectange from one image to the other image with masking color
+  assert src.w == dest.w and src.h == dest.h
+  for x in 0..<int(src.w):
+    for y in 0..<int(src.h):
+      let
+        xsrc = int(src.x) + x
+        ysrc = int(src.y) + y
+        xdest = int(dest.x) + x
+        ydest = int(dest.y) + y
+      if destImage.inside(xdest, ydest) and srcImage.inside(xsrc, ysrc):
+        var rgba = srcImage.getRgba(xsrc, ysrc)
+        if rgba.a == uint8(255):
+          destImage.putRgba(xdest, ydest, color)
+        elif rgba.a > uint8(0):
+          let destRgba = destImage.getRgba(xdest, ydest)
+          let a = float(rgba.a)/255.0
+          rgba.r = uint8(float(destRgba.r) * (1-a) + float(color.r) * a)
+          rgba.g = uint8(float(destRgba.g) * (1-a) + float(color.g) * a)
+          rgba.b = uint8(float(destRgba.b) * (1-a) + float(color.b) * a)
+          rgba.a = 255
+          destImage.putRgba(xdest, ydest, rgba)
+
+proc computeBounds(destImage: Image, srcImage: Image, mat: Mat4, matInv: Mat4): (int, int, int, int) =
   # compute the bounds
   let
     bounds = @[
@@ -189,7 +212,7 @@ proc roundPixelVec(v: Vec3): Vec2 {.inline.} =
   vec2(round(v.x), round(v.y))
 
 
-proc blit*(destImage: var Image, srcImage: Image, mat: Mat4) =
+proc blit*(destImage: Image, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending
   let matInv = mat.inverse()
   let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
@@ -204,7 +227,7 @@ proc blit*(destImage: var Image, srcImage: Image, mat: Mat4) =
         destImage.putRgba(x, y, rgba)
 
 
-proc blitWithAlpha*(destImage: var Image, srcImage: Image, mat: Mat4) =
+proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending
   let matInv = mat.inverse()
   let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
@@ -232,7 +255,7 @@ proc blitWithAlpha*(destImage: var Image, srcImage: Image, mat: Mat4) =
           destImage.putRgba(x, y, rgba)
 
 
-proc blitWithMask*(destImage: var Image, srcImage: Image, mat: Mat4, color: ColorRGBA) =
+proc blitWithMask*(destImage: Image, srcImage: Image, mat: Mat4, color: ColorRGBA) =
   ## Blits one image onto another using matrix with masking color
   let matInv = mat.inverse()
   let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
@@ -252,7 +275,7 @@ proc blitWithMask*(destImage: var Image, srcImage: Image, mat: Mat4, color: Colo
           destImage.putRgba(x, y, color)
 
 
-proc line*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
+proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
   ## Draws a line from one at vec to to vec.
   var dx = to.x - at.x
   var dy = to.y - at.y
@@ -285,6 +308,28 @@ proc line*(image: var Image, at, to: Vec2, rgba: ColorRGBA) =
       y -= 1
       if y < to.y:
         break
+
+
+proc fillRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
+  ## Draws a rectangle
+  let
+    minx = max(int(rect.x), 0)
+    maxx = min(int(rect.x + rect.w), image.width)
+    miny = max(int(rect.y), 0)
+    maxy = min(int(rect.y + rect.h), image.height)
+  for x in minx ..< maxx:
+    for y in miny ..< maxy:
+      image.putRgba(x, y, rgba)
+
+
+proc strokeRect*(image: var Image, rect: Rect, color: ColorRGBA) =
+  let
+    at = rect.xy
+    wh = rect.wh - vec2(1, 1) # line width
+  image.line(at, at + vec2(wh.x, 0), color)
+  image.line(at + vec2(wh.x, 0), at + vec2(wh.x, wh.y), color)
+  image.line(at + vec2(0, wh.y), at + vec2(wh.x, wh.y), color)
+  image.line(at + vec2(0, wh.y), at, color)
 
 
 proc minifyBy2(image: Image): Image =
