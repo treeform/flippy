@@ -152,6 +152,14 @@ proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
     image.putRgba(x, y, rgba)
 
 
+proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
+  ## Blits rectange from one image to the other image.
+  for x in 0..<int(srcImage.width):
+    for y in 0..<int(srcImage.height):
+      var rgba = srcImage.getRgba(x, y)
+      destImage.putRgbaSafe(int(pos.x) + x, int(pos.y) + y, rgba)
+
+
 proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
   ## Blits rectange from one image to the other image.
   assert src.w == dest.w and src.h == dest.h
@@ -332,7 +340,7 @@ proc strokeRect*(image: var Image, rect: Rect, color: ColorRGBA) =
   image.line(at + vec2(0, wh.y), at, color)
 
 
-proc minifyBy2(image: Image): Image =
+proc minifyBy2*(image: Image): Image =
   ## Scales the image down by an integer scale.
   result = newImage(image.width div 2, image.height div 2, image.channels)
   for x in 0..<result.width:
@@ -394,3 +402,72 @@ proc getSubImage*(image: Image, x, y, w, h: int): Image =
   for x2 in 0..<w:
     for y2 in 0..<h:
       result.putRgba(x2, y2, image.getRgba(x2 + x, y2 + y))
+
+
+proc removeAlpha*(image: Image) =
+  ## Removes alpha channel from the images by:
+  ## Setting it to 255 everywhere.
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
+      var rgba = image.getRgba(x, y)
+      rgba.a = 255
+      image.putRgba(x, y, rgba)
+
+
+proc alphaBleed*(image: Image) =
+  ## PNG saves space by encoding alpha = 0 areas as black.
+  ## but scaling such images lets the black or gray come out.
+  ## This bleeds the real colors into invisable space
+
+  proc minifyBy2Alpha(image: Image): Image =
+    ## Scales the image down by an integer scale.
+    result = newImage(image.width div 2, image.height div 2, image.channels)
+    for x in 0..<result.width:
+      for y in 0..<result.height:
+        var
+          sumR = 0
+          sumG = 0
+          sumB = 0
+          count = 0
+        proc use(rgba: ColorRGBA) =
+          if rgba.a > 0.uint8:
+            sumR += int rgba.r
+            sumG += int rgba.g
+            sumB += int rgba.b
+            count += 1
+        use image.getRgba(x * 2 + 0, y * 2 + 0)
+        use image.getRgba(x * 2 + 1, y * 2 + 0)
+        use image.getRgba(x * 2 + 1, y * 2 + 1)
+        use image.getRgba(x * 2 + 0, y * 2 + 1)
+        if count > 0:
+          var rgba: ColorRGBA
+          rgba.r = uint8(sumR div count)
+          rgba.g = uint8(sumG div count)
+          rgba.b = uint8(sumB div count)
+          rgba.a = 255
+          result.putRgba(x, y, rgba)
+
+  # scale image down in layers, only using opaque pixels
+  var layers: seq[Image]
+  var min = image.minifyBy2Alpha()
+  while min.width >= 1 and min.height >= 1:
+    layers.add min
+    min = min.minifyBy2Alpha()
+
+  # walk over all transparent pixels, going up layers to find best colors
+  for x in 0 ..< image.width:
+    for y in 0 ..< image.height:
+      var rgba = image.getRgba(x, y)
+      if rgba.a == 0:
+        var
+          xs = x
+          ys = y
+        for l in layers:
+          xs = min(xs div 2, l.width - 1)
+          ys = min(ys div 2, l.height - 1)
+          rgba = l.getRgba(xs, ys)
+          if rgba.a > 0.uint8:
+            break
+        rgba.a = 0
+      image.putRgba(x, y, rgba)
+
