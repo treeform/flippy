@@ -5,7 +5,7 @@ import vmath, print, chroma
 
 
 type Image* = ref object
-  ## Main image object that hold the bitmap data.
+  ## Main image object that holds the bitmap data.
   filePath*: string
   width*: int
   height*: int
@@ -23,7 +23,7 @@ proc `+`(a, b: ColorRGBA): ColorRGBA =
 
 
 proc `div`(rgba: ColorRGBA; i: uint8): ColorRGBA =
-  ## Integer devide a ColorRGBA by an integer amount.
+  ## Integer divide a ColorRGBA by an integer amount.
   result.r = rgba.r div i
   result.g = rgba.g div i
   result.b = rgba.b div i
@@ -39,7 +39,7 @@ proc `$`*(image: Image): string =
 
 
 proc newImage*(width, height, channels: int): Image =
-  ## Create a new image with appropraite dimentions.
+  ## Creates a new image with appropriate dimensions.
   var image = Image()
   image.width = width
   image.height = height
@@ -88,12 +88,12 @@ proc save*(image: Image, filePath: string) =
 
 
 proc inside*(image: Image, x, y: int): bool {.inline.} =
-  ## Returns true if x,y is inside the image
+  ## Returns true if x,y is inside the image.
   x >= 0 and x < image.width and y >= 0 and y < image.height
 
 
 proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
-  ## Gets a color with (x, y) cordinates.
+  ## Gets a color from (x, y) coordinates.
   assert x >= 0 and x < image.width
   assert y >= 0 and y < image.height
   if image.channels == 1:
@@ -116,12 +116,12 @@ proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
 
 
 proc getRgba*(image: Image, x, y: float64): ColorRGBA {.inline.} =
-  ## Gets a pixel as (x, y) floats
+  ## Gets a pixel as (x, y) floats.
   getRgba(image, int x, int y)
 
 
 proc getRgbaSafe*(image: Image, x, y: int): ColorRGBA {.inline.} =
-  ## Gets a pixel as (x, y) but returns transperancy if next sampled outside
+  ## Gets a pixel as (x, y) but returns transparency if next sampled outside.
   if image.inside(x, y):
     return image.getRgba(x, y)
 
@@ -147,13 +147,13 @@ proc putRgba*(image: Image, x, y: float64, rgb: ColorRGBA) {.inline.} =
 
 
 proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
-  ## Puts pixel onto the image or safly ignores this command if pixel is outside the image
+  ## Puts pixel onto the image or safely ignores this command if pixel is outside the image.
   if image.inside(x, y):
     image.putRgba(x, y, rgba)
 
 
 proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
-  ## Blits rectange from one image to the other image.
+  ## Blits rectangle from one image to the other image.
   for x in 0..<int(srcImage.width):
     for y in 0..<int(srcImage.height):
       var rgba = srcImage.getRgba(x, y)
@@ -161,7 +161,7 @@ proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
 
 
 proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
-  ## Blits rectange from one image to the other image.
+  ## Blits rectangle from one image to the other image.
   assert src.w == dest.w and src.h == dest.h
   for x in 0..<int(src.w):
     for y in 0..<int(src.h):
@@ -170,7 +170,7 @@ proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
 
 
 proc blitWithMask*(destImage: Image, srcImage: Image, src, dest: Rect, color: ColorRGBA) =
-  ## Blits rectange from one image to the other image with masking color
+  ## Blits rectangle from one image to the other image with masking color.
   assert src.w == dest.w and src.h == dest.h
   for x in 0..<int(src.w):
     for y in 0..<int(src.h):
@@ -193,7 +193,7 @@ proc blitWithMask*(destImage: Image, srcImage: Image, src, dest: Rect, color: Co
           destImage.putRgba(xdest, ydest, rgba)
 
 proc computeBounds(destImage: Image, srcImage: Image, mat: Mat4, matInv: Mat4): (int, int, int, int) =
-  # compute the bounds
+  # Computes the bounds.
   let
     bounds = @[
       mat * vec3(-1, -1, 0),
@@ -216,12 +216,12 @@ proc computeBounds(destImage: Image, srcImage: Image, mat: Mat4, matInv: Mat4): 
 
 
 proc roundPixelVec(v: Vec3): Vec2 {.inline.} =
-  ## Rounds vector to pixel center
+  ## Rounds vector to pixel center.
   vec2(round(v.x), round(v.y))
 
 
 proc blit*(destImage: Image, srcImage: Image, mat: Mat4) =
-  ## Blits one image onto another using matrix with alpha blending
+  ## Blits one image onto another using matrix with alpha blending.
   let matInv = mat.inverse()
   let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
 
@@ -236,7 +236,7 @@ proc blit*(destImage: Image, srcImage: Image, mat: Mat4) =
 
 
 proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
-  ## Blits one image onto another using matrix with alpha blending
+  ## Blits one image onto another using matrix with alpha blending.
   let matInv = mat.inverse()
   let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
 
@@ -264,7 +264,7 @@ proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
 
 
 proc blitWithMask*(destImage: Image, srcImage: Image, mat: Mat4, color: ColorRGBA) =
-  ## Blits one image onto another using matrix with masking color
+  ## Blits one image onto another using matrix with masking color.
   let matInv = mat.inverse()
   let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
 
@@ -319,7 +319,7 @@ proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
 
 
 proc fillRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
-  ## Draws a rectangle
+  ## Draws a rectangle.
   let
     minx = max(int(rect.x), 0)
     maxx = min(int(rect.x + rect.w), image.width)
@@ -417,7 +417,7 @@ proc removeAlpha*(image: Image) =
 proc alphaBleed*(image: Image) =
   ## PNG saves space by encoding alpha = 0 areas as black.
   ## but scaling such images lets the black or gray come out.
-  ## This bleeds the real colors into invisable space
+  ## This bleeds the real colors into invisible space
 
   proc minifyBy2Alpha(image: Image): Image =
     ## Scales the image down by an integer scale.
