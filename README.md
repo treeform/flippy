@@ -29,3 +29,283 @@ Into
 
 ![Alt text](tests/lenna2.png?raw=true "Title")
 
+
+# API: flippy
+
+```nim
+import flippy
+
+```
+
+## **type** Image
+
+Main image object that holds the bitmap data.
+
+```nim
+Image = ref object
+  filePath*: string
+  width*: int
+  height*: int
+  channels*: int
+  format*: int
+  data*: seq[uint8]
+
+```
+
+## **proc** `$`
+
+Display the image path, size and channels.
+
+```nim
+proc `$`(image: Image): string 
+```
+
+## **proc** newImage
+
+Creates a new image with appropriate dimensions.
+
+```nim
+proc newImage(width, height, channels: int): Image 
+```
+
+## **proc** newImage
+
+Creates a new image with a path.
+
+```nim
+proc newImage(filePath: string; width, height, channels: int): Image 
+```
+
+## **proc** loadImage
+
+Loads a png image.
+
+```nim
+proc loadImage(filePath: string): Image {.raises: [STBIException].}
+```
+
+## **proc** save
+
+Saves a png image.
+
+```nim
+proc save(image: Image) {.raises: [Exception].}
+```
+
+## **proc** save
+
+Sets image path and save the image.
+
+```nim
+proc save(image: Image; filePath: string) {.raises: [Exception].}
+```
+
+## **proc** inside
+
+Returns true if x,y is inside the image.
+
+```nim
+proc inside(image: Image; x, y: int): bool {.inline.}
+```
+
+## **proc** getRgba
+
+Gets a color from (x, y) coordinates.
+
+```nim
+proc getRgba(image: Image; x, y: int): ColorRGBA {.inline.}
+```
+
+## **proc** getRgba
+
+Gets a pixel as (x, y) floats.
+
+```nim
+proc getRgba(image: Image; x, y: float64): ColorRGBA {.inline.}
+```
+
+## **proc** getRgbaSafe
+
+Gets a pixel as (x, y) but returns transparency if next sampled outside.
+
+```nim
+proc getRgbaSafe(image: Image; x, y: int): ColorRGBA {.inline.}
+```
+
+## **proc** putRgba
+
+Puts a ColorRGBA pixel back.
+
+```nim
+proc putRgba(image: Image; x, y: int; rgb: ColorRGBA) {.inline.}
+```
+
+## **proc** putRgba
+
+Puts a ColorRGBA pixel back  as x, y floats (does not do blending).
+
+```nim
+proc putRgba(image: Image; x, y: float64; rgb: ColorRGBA) {.inline.}
+```
+
+## **proc** putRgbaSafe
+
+Puts pixel onto the image or safely ignores this command if pixel is outside the image.
+
+```nim
+proc putRgbaSafe(image: Image; x, y: int; rgba: ColorRGBA) {.inline.}
+```
+
+## **proc** blit
+
+Blits rectangle from one image to the other image.
+
+```nim
+proc blit(destImage: Image; srcImage: Image; pos: Vec2) 
+```
+
+## **proc** blit
+
+Blits rectangle from one image to the other image.
+
+```nim
+proc blit(destImage: Image; srcImage: Image; src, dest: Rect) 
+```
+
+## **proc** blitWithMask
+
+Blits rectangle from one image to the other image with masking color.
+
+```nim
+proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; color: ColorRGBA) {.
+    raises: [].}
+```
+
+## **proc** blit
+
+Blits one image onto another using matrix with alpha blending.
+
+```nim
+proc blit(destImage: Image; srcImage: Image; mat: Mat4) 
+```
+
+## **proc** blitWithAlpha
+
+Blits one image onto another using matrix with alpha blending.
+
+```nim
+proc blitWithAlpha(destImage: Image; srcImage: Image; mat: Mat4) 
+```
+
+## **proc** blitWithMask
+
+Blits one image onto another using matrix with masking color.
+
+```nim
+proc blitWithMask(destImage: Image; srcImage: Image; mat: Mat4; color: ColorRGBA) {.
+    raises: [].}
+```
+
+## **proc** line
+
+Draws a line from one at vec to to vec.
+
+```nim
+proc line(image: Image; at, to: Vec2; rgba: ColorRGBA) 
+```
+
+## **proc** fillRect
+
+Draws a rectangle.
+
+```nim
+proc fillRect(image: Image; rect: Rect; rgba: ColorRGBA) 
+```
+
+## **proc** strokeRect
+
+
+```nim
+proc strokeRect(image: var Image; rect: Rect; color: ColorRGBA) 
+```
+
+## **proc** minifyBy2
+
+Scales the image down by an integer scale.
+
+```nim
+proc minifyBy2(image: Image): Image 
+```
+
+## **proc** minify
+
+Scales the image down by an integer scale.
+
+```nim
+proc minify(image: Image; scale: int): Image 
+```
+
+## **proc** magnify
+
+Scales image image up by an integer scale.
+
+```nim
+proc magnify(image: Image; scale: int): Image 
+```
+
+## **proc** fill
+
+Fills the image with a solid color.
+
+```nim
+proc fill(image: Image; rgb: ColorRGBA) {.raises: [Exception].}
+```
+
+## **proc** flipHorizontal
+
+Flips the image around the Y axis
+
+```nim
+proc flipHorizontal(image: Image): Image 
+```
+
+## **proc** flipVertical
+
+Flips the image around the X axis
+
+```nim
+proc flipVertical(image: Image): Image 
+```
+
+## **proc** rotate90Degrees
+
+Rotates the image clockwize
+
+```nim
+proc rotate90Degrees(image: Image): Image 
+```
+
+## **proc** getSubImage
+
+Gets a sub image of the main image
+
+```nim
+proc getSubImage(image: Image; x, y, w, h: int): Image 
+```
+
+## **proc** removeAlpha
+
+Removes alpha channel from the images by: Setting it to 255 everywhere.
+
+```nim
+proc removeAlpha(image: Image) 
+```
+
+## **proc** alphaBleed
+
+PNG saves space by encoding alpha = 0 areas as black. but scaling such images lets the black or gray come out. This bleeds the real colors into invisible space
+
+```nim
+proc alphaBleed(image: Image) 
+```
+
