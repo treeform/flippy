@@ -177,8 +177,7 @@ proc blit(destImage: Image; srcImage: Image; src, dest: Rect)
 Blits rectangle from one image to the other image with masking color.
 
 ```nim
-proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; color: ColorRGBA) {.
-    raises: [].}
+proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; color: ColorRGBA) 
 ```
 
 ## **proc** blit
@@ -202,8 +201,7 @@ proc blitWithAlpha(destImage: Image; srcImage: Image; mat: Mat4)
 Blits one image onto another using matrix with masking color.
 
 ```nim
-proc blitWithMask(destImage: Image; srcImage: Image; mat: Mat4; color: ColorRGBA) {.
-    raises: [].}
+proc blitWithMask(destImage: Image; srcImage: Image; mat: Mat4; color: ColorRGBA) 
 ```
 
 ## **proc** line
