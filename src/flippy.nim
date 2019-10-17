@@ -22,12 +22,28 @@ proc `+`(a, b: ColorRGBA): ColorRGBA =
   result.a = a.a + b.a
 
 
+proc `+`(a, b: Color): Color =
+  ## Adds two Color together.
+  result.r = a.r + b.r
+  result.g = a.g + b.g
+  result.b = a.b + b.b
+  result.a = a.a + b.a
+
+
 proc `div`(rgba: ColorRGBA; i: uint8): ColorRGBA =
   ## Integer divide a ColorRGBA by an integer amount.
   result.r = rgba.r div i
   result.g = rgba.g div i
   result.b = rgba.b div i
   result.a = rgba.a div i
+
+
+proc `/`(color: Color; v: float): Color =
+  ## Divide a Color by an float amount.
+  result.r = color.r / v
+  result.g = color.g / v
+  result.b = color.b / v
+  result.a = color.a / v
 
 
 proc `$`*(image: Image): string =
@@ -345,12 +361,12 @@ proc minifyBy2*(image: Image): Image =
   result = newImage(image.width div 2, image.height div 2, image.channels)
   for x in 0..<result.width:
     for y in 0..<result.height:
-      var rgba =
-          image.getRgba(x * 2 + 0, y * 2 + 0) div 4 +
-          image.getRgba(x * 2 + 1, y * 2 + 0) div 4 +
-          image.getRgba(x * 2 + 1, y * 2 + 1) div 4 +
-          image.getRgba(x * 2 + 0, y * 2 + 1) div 4
-      result.putRgba(x, y, rgba)
+      var color =
+          image.getRgba(x * 2 + 0, y * 2 + 0).color / 4.0 +
+          image.getRgba(x * 2 + 1, y * 2 + 0).color / 4.0 +
+          image.getRgba(x * 2 + 1, y * 2 + 1).color / 4.0 +
+          image.getRgba(x * 2 + 0, y * 2 + 1).color / 4.0
+      result.putRgba(x, y, color.rgba)
 
 
 proc minify*(image: Image, scale: int): Image =
@@ -394,6 +410,34 @@ proc fill*(image: Image, rgb: ColorRgba) =
       i += 4
   else:
     raise newException(Exception, "File format not supported")
+
+
+proc flipHorizontal*(image: Image): Image =
+  ## Flips the image around the Y axis
+  result = newImage(image.width, image.height, image.channels)
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
+      var rgba = image.getRgba(x, y)
+      #echo image.width - x
+      result.putRgba(image.width - x - 1, y, rgba)
+
+
+proc flipVertical*(image: Image): Image =
+  ## Flips the image around the X axis
+  result = newImage(image.width, image.height, image.channels)
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
+      var rgba = image.getRgba(x, y)
+      result.putRgba(x, image.height - y - 1, rgba)
+
+
+proc rotate90Degrees*(image: Image): Image =
+  ## Rotates the image clockwize
+  result = newImage(image.height, image.width, image.channels)
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
+      var rgba = image.getRgba(x, y)
+      result.putRgba(image.height - y - 1, x, rgba)
 
 
 proc getSubImage*(image: Image, x, y, w, h: int): Image =
