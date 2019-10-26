@@ -34,7 +34,6 @@ Into
 
 ```nim
 import flippy
-
 ```
 
 ## **type** Image
@@ -137,7 +136,7 @@ proc getRgbaSafe(image: Image; x, y: int): ColorRGBA {.inline.}
 Puts a ColorRGBA pixel back.
 
 ```nim
-proc putRgba(image: Image; x, y: int; rgb: ColorRGBA) {.inline.}
+proc putRgba(image: Image; x, y: int; rgba: ColorRGBA) {.inline.}
 ```
 
 ## **proc** putRgba
@@ -145,7 +144,7 @@ proc putRgba(image: Image; x, y: int; rgb: ColorRGBA) {.inline.}
 Puts a ColorRGBA pixel back  as x, y floats (does not do blending).
 
 ```nim
-proc putRgba(image: Image; x, y: float64; rgb: ColorRGBA) {.inline.}
+proc putRgba(image: Image; x, y: float64; rgba: ColorRGBA) {.inline.}
 ```
 
 ## **proc** putRgbaSafe
@@ -177,7 +176,7 @@ proc blit(destImage: Image; srcImage: Image; src, dest: Rect)
 Blits rectangle from one image to the other image with masking color.
 
 ```nim
-proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; color: ColorRGBA) 
+proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; rgba: ColorRGBA) 
 ```
 
 ## **proc** blit
@@ -201,7 +200,7 @@ proc blitWithAlpha(destImage: Image; srcImage: Image; mat: Mat4)
 Blits one image onto another using matrix with masking color.
 
 ```nim
-proc blitWithMask(destImage: Image; srcImage: Image; mat: Mat4; color: ColorRGBA) 
+proc blitWithMask(destImage: Image; srcImage: Image; mat: Mat4; rgba: ColorRGBA) 
 ```
 
 ## **proc** line
@@ -214,7 +213,7 @@ proc line(image: Image; at, to: Vec2; rgba: ColorRGBA)
 
 ## **proc** fillRect
 
-Draws a rectangle.
+Draws a filled rectangle.
 
 ```nim
 proc fillRect(image: Image; rect: Rect; rgba: ColorRGBA) 
@@ -222,9 +221,26 @@ proc fillRect(image: Image; rect: Rect; rgba: ColorRGBA)
 
 ## **proc** strokeRect
 
+Draws a rectangle borders only.
 
 ```nim
-proc strokeRect(image: var Image; rect: Rect; color: ColorRGBA) 
+proc strokeRect(image: var Image; rect: Rect; rgba: ColorRGBA) 
+```
+
+## **proc** fillCirle
+
+Draws a filled circle with antilaised edges.
+
+```nim
+proc fillCirle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA) 
+```
+
+## **proc** strokeCirle
+
+Draws a border of circle with antilaised edges.
+
+```nim
+proc strokeCirle(image: Image; pos: Vec2; radius: float; border: float; rgba: ColorRGBA) 
 ```
 
 ## **proc** minifyBy2
@@ -256,7 +272,7 @@ proc magnify(image: Image; scale: int): Image
 Fills the image with a solid color.
 
 ```nim
-proc fill(image: Image; rgb: ColorRGBA) {.raises: [Exception].}
+proc fill(image: Image; rgba: ColorRGBA) {.raises: [Exception].}
 ```
 
 ## **proc** flipHorizontal

@@ -142,24 +142,24 @@ proc getRgbaSafe*(image: Image, x, y: int): ColorRGBA {.inline.} =
     return image.getRgba(x, y)
 
 
-proc putRgba*(image: Image, x, y: int, rgb: ColorRGBA) {.inline.} =
+proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
   ## Puts a ColorRGBA pixel back.
   if image.channels == 3:
-    image.data[(image.width * y + x) * 3 + 0] = rgb.r
-    image.data[(image.width * y + x) * 3 + 1] = rgb.g
-    image.data[(image.width * y + x) * 3 + 2] = rgb.b
+    image.data[(image.width * y + x) * 3 + 0] = rgba.r
+    image.data[(image.width * y + x) * 3 + 1] = rgba.g
+    image.data[(image.width * y + x) * 3 + 2] = rgba.b
   elif image.channels == 4:
-    image.data[(image.width * y + x) * 4 + 0] = rgb.r
-    image.data[(image.width * y + x) * 4 + 1] = rgb.g
-    image.data[(image.width * y + x) * 4 + 2] = rgb.b
-    image.data[(image.width * y + x) * 4 + 3] = rgb.a
+    image.data[(image.width * y + x) * 4 + 0] = rgba.r
+    image.data[(image.width * y + x) * 4 + 1] = rgba.g
+    image.data[(image.width * y + x) * 4 + 2] = rgba.b
+    image.data[(image.width * y + x) * 4 + 3] = rgba.a
   else:
     quit("not supported")
 
 
-proc putRgba*(image: Image, x, y: float64, rgb: ColorRGBA) {.inline.} =
+proc putRgba*(image: Image, x, y: float64, rgba: ColorRGBA) {.inline.} =
   ## Puts a ColorRGBA pixel back  as x, y floats (does not do blending).
-  putRgba(image, int x, int y, rgb)
+  putRgba(image, int x, int y, rgba)
 
 
 proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
@@ -185,7 +185,7 @@ proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
       destImage.putRgbaSafe(int(dest.x) + x, int(dest.y) + y, rgba)
 
 
-proc blitWithMask*(destImage: Image, srcImage: Image, src, dest: Rect, color: ColorRGBA) =
+proc blitWithMask*(destImage: Image, srcImage: Image, src, dest: Rect, rgba: ColorRGBA) =
   ## Blits rectangle from one image to the other image with masking color.
   assert src.w == dest.w and src.h == dest.h
   for x in 0..<int(src.w):
@@ -198,13 +198,13 @@ proc blitWithMask*(destImage: Image, srcImage: Image, src, dest: Rect, color: Co
       if destImage.inside(xdest, ydest) and srcImage.inside(xsrc, ysrc):
         var rgba = srcImage.getRgba(xsrc, ysrc)
         if rgba.a == uint8(255):
-          destImage.putRgba(xdest, ydest, color)
+          destImage.putRgba(xdest, ydest, rgba)
         elif rgba.a > uint8(0):
           let destRgba = destImage.getRgba(xdest, ydest)
           let a = float(rgba.a)/255.0
-          rgba.r = uint8(float(destRgba.r) * (1-a) + float(color.r) * a)
-          rgba.g = uint8(float(destRgba.g) * (1-a) + float(color.g) * a)
-          rgba.b = uint8(float(destRgba.b) * (1-a) + float(color.b) * a)
+          rgba.r = uint8(float(destRgba.r) * (1-a) + float(rgba.r) * a)
+          rgba.g = uint8(float(destRgba.g) * (1-a) + float(rgba.g) * a)
+          rgba.b = uint8(float(destRgba.b) * (1-a) + float(rgba.b) * a)
           rgba.a = 255
           destImage.putRgba(xdest, ydest, rgba)
 
@@ -279,7 +279,7 @@ proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
           destImage.putRgba(x, y, rgba)
 
 
-proc blitWithMask*(destImage: Image, srcImage: Image, mat: Mat4, color: ColorRGBA) =
+proc blitWithMask*(destImage: Image, srcImage: Image, mat: Mat4, rgba: ColorRGBA) =
   ## Blits one image onto another using matrix with masking color.
   let matInv = mat.inverse()
   let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
@@ -296,7 +296,7 @@ proc blitWithMask*(destImage: Image, srcImage: Image, mat: Mat4, color: ColorRGB
       if srcImage.inside(int srcV.x, int srcV.y):
         let rgba = srcImage.getRgba(srcV.x, srcV.y)
         if rgba.a > uint8 0:
-          destImage.putRgba(x, y, color)
+          destImage.putRgba(x, y, rgba)
 
 
 proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
@@ -335,7 +335,7 @@ proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
 
 
 proc fillRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
-  ## Draws a rectangle.
+  ## Draws a filled rectangle.
   let
     minx = max(int(rect.x), 0)
     maxx = min(int(rect.x + rect.w), image.width)
@@ -346,14 +346,68 @@ proc fillRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
       image.putRgba(x, y, rgba)
 
 
-proc strokeRect*(image: var Image, rect: Rect, color: ColorRGBA) =
+proc strokeRect*(image: var Image, rect: Rect, rgba: ColorRGBA) =
+  ## Draws a rectangle borders only.
   let
     at = rect.xy
     wh = rect.wh - vec2(1, 1) # line width
-  image.line(at, at + vec2(wh.x, 0), color)
-  image.line(at + vec2(wh.x, 0), at + vec2(wh.x, wh.y), color)
-  image.line(at + vec2(0, wh.y), at + vec2(wh.x, wh.y), color)
-  image.line(at + vec2(0, wh.y), at, color)
+  image.line(at, at + vec2(wh.x, 0), rgba)
+  image.line(at + vec2(wh.x, 0), at + vec2(wh.x, wh.y), rgba)
+  image.line(at + vec2(0, wh.y), at + vec2(wh.x, wh.y), rgba)
+  image.line(at + vec2(0, wh.y), at, rgba)
+
+
+proc fillCirle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
+  ## Draws a filled circle with antilaised edges.
+  let
+    minx = max(int(pos.x - radius), 0)
+    maxx = min(int(pos.x + radius), image.width)
+    miny = max(int(pos.y - radius), 0)
+    maxy = min(int(pos.y + radius), image.height)
+  for y in miny ..< maxy:
+    for x in minx ..< maxx:
+      let
+        pixelPos = vec2(float x, float y) + vec2(0.5, 0.5)
+        pixelDist = pixelPos.dist(pos)
+      if pixelDist < radius - sqrt(0.5):
+        image.putRgba(x, y, rgba)
+      elif pixelDist < radius + sqrt(0.5):
+        var touch = 0
+        const n = 5
+        const r = (n - 1) div 2
+        for aay in -r .. r:
+          for aax in -r .. r:
+            if pos.dist(pixelPos + vec2(aay / n, aax / n)) < radius:
+              inc touch
+        var rgbaAA = rgba
+        rgbaAA.a = uint8(float(touch) * 255.0 / (n * n))
+        image.putRgba(x, y, rgbaAA)
+
+
+proc strokeCirle*(image: Image, pos: Vec2, radius: float, border: float, rgba: ColorRGBA) =
+  ## Draws a border of circle with antilaised edges.
+  let
+    minx = max(int(pos.x - radius - border), 0)
+    maxx = min(int(pos.x + radius + border), image.width)
+    miny = max(int(pos.y - radius - border), 0)
+    maxy = min(int(pos.y + radius + border), image.height)
+  for y in miny ..< maxy:
+    for x in minx ..< maxx:
+      let
+        pixelPos = vec2(float x, float y) + vec2(0.5, 0.5)
+        pixelDist = pixelPos.dist(pos)
+      if pixelDist > radius - border/2 - sqrt(0.5) and pixelDist < radius + border/2 + sqrt(0.5):
+        var touch = 0
+        const n = 5
+        const r = (n - 1) div 2
+        for aay in -r .. r:
+          for aax in -r .. r:
+            let dist = pos.dist(pixelPos + vec2(aay / n, aax / n))
+            if dist > radius - border/2 and dist < radius + border/2:
+              inc touch
+        var rgbaAA = rgba
+        rgbaAA.a = uint8(float(touch) * 255.0 / (n * n))
+        image.putRgba(x, y, rgbaAA)
 
 
 proc minifyBy2*(image: Image): Image =
@@ -386,27 +440,27 @@ proc magnify*(image: Image, scale: int): Image =
       result.putRgba(x, y, rgba)
 
 
-proc fill*(image: Image, rgb: ColorRgba) =
+proc fill*(image: Image, rgba: ColorRgba) =
   ## Fills the image with a solid color.
   if image.channels == 1:
     var i = 0
     while i < image.data.len:
-      image.data[i + 0] = rgb.a
+      image.data[i + 0] = rgba.a
       i += 1
   elif image.channels == 3:
     var i = 0
     while i < image.data.len:
-      image.data[i + 0] = rgb.r
-      image.data[i + 1] = rgb.g
-      image.data[i + 2] = rgb.b
+      image.data[i + 0] = rgba.r
+      image.data[i + 1] = rgba.g
+      image.data[i + 2] = rgba.b
       i += 3
   elif image.channels == 4:
     var i = 0
     while i < image.data.len:
-      image.data[i + 0] = rgb.r
-      image.data[i + 1] = rgb.g
-      image.data[i + 2] = rgb.b
-      image.data[i + 3] = rgb.a
+      image.data[i + 0] = rgba.r
+      image.data[i + 1] = rgba.g
+      image.data[i + 2] = rgba.b
+      image.data[i + 3] = rgba.a
       i += 4
   else:
     raise newException(Exception, "File format not supported")
