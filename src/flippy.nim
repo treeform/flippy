@@ -1,7 +1,8 @@
-import math, os, strutils
+import math, os
 import stb_image/read as stbi
 import stb_image/write as stbiw
-import vmath, print, chroma
+import vmath, chroma
+#import print, strutils
 
 
 type Image* = ref object
@@ -14,32 +15,56 @@ type Image* = ref object
   data*: seq[uint8]
 
 
-proc `+`(a, b: ColorRGBA): ColorRGBA =
-  ## Adds two ColorRGBA together.
+proc `+`[T: ColorRGBA | Color](a, b: T): T =
+  ## Adds two colors together.
   result.r = a.r + b.r
   result.g = a.g + b.g
   result.b = a.b + b.b
   result.a = a.a + b.a
 
 
-proc `+`(a, b: Color): Color =
-  ## Adds two Color together.
-  result.r = a.r + b.r
-  result.g = a.g + b.g
-  result.b = a.b + b.b
-  result.a = a.a + b.a
+proc `-`[T: ColorRGBA | Color](a, b: T): T =
+  ## Subtracts two colors.
+  result.r = a.r - b.r
+  result.g = a.g - b.g
+  result.b = a.b - b.b
+  result.a = a.a - a.a
 
 
-proc `div`(rgba: ColorRGBA; i: uint8): ColorRGBA =
-  ## Integer divide a ColorRGBA by an integer amount.
+proc `+`[T: ColorRGBA | Color](a: T, b: uint8): T =
+  ## Adds constant to color.
+  result.r = a.r + b
+  result.g = a.g + b
+  result.b = a.b + b
+  result.a = a.a + b
+
+
+proc `-`[T: ColorRGBA | Color](a: T, b: uint8): T =
+  ## Subtracts constant from color.
+  result.r = a.r - b
+  result.g = a.g - b
+  result.b = a.b - b
+  result.a = a.a - b
+
+
+proc `*`[T: ColorRGBA | Color](rgba: T; i: float): T =
+  ## Multiply color by constant.
+  result.r = uint8(float(rgba.r) * i)
+  result.g = uint8(float(rgba.g) * i)
+  result.b = uint8(float(rgba.b) * i)
+  result.a = uint8(float(rgba.a) * i)
+
+
+proc `div`[T: ColorRGBA | Color](rgba: T; i: uint8): T =
+  ## Integer divide a color by an integer amount.
   result.r = rgba.r div i
   result.g = rgba.g div i
   result.b = rgba.b div i
   result.a = rgba.a div i
 
 
-proc `/`(color: Color; v: float): Color =
-  ## Divide a Color by an float amount.
+proc `/`[T: ColorRGBA | Color](color: T; v: float): T =
+  ## Divide a color by an float amount.
   result.r = color.r / v
   result.g = color.g / v
   result.b = color.b / v
@@ -485,6 +510,14 @@ proc flipVertical*(image: Image): Image =
       result.putRgba(x, image.height - y - 1, rgba)
 
 
+proc getSubImage*(image: Image, x, y, w, h: int): Image =
+  ## Gets a sub image of the main image
+  result = newImage(w, h, image.channels)
+  for x2 in 0..<w:
+    for y2 in 0..<h:
+      result.putRgba(x2, y2, image.getRgba(x2 + x, y2 + y))
+
+
 proc rotate90Degrees*(image: Image): Image =
   ## Rotates the image clockwize
   result = newImage(image.height, image.width, image.channels)
@@ -494,12 +527,88 @@ proc rotate90Degrees*(image: Image): Image =
       result.putRgba(image.height - y - 1, x, rgba)
 
 
-proc getSubImage*(image: Image, x, y, w, h: int): Image =
-  ## Gets a sub image of the main image
-  result = newImage(w, h, image.channels)
-  for x2 in 0..<w:
-    for y2 in 0..<h:
-      result.putRgba(x2, y2, image.getRgba(x2 + x, y2 + y))
+proc shearX*(image: Image, shear: float): Image =
+  ## Shears the image horizontally; resizes to fit
+  let
+    offset = int(abs(float(image.height) * shear))
+    offsetAdd = if shear > 0: 0 else: offset
+    newWidth = image.width + offset
+  var sheared = newImage(newWidth, image.height, 4)
+  for y in 0 ..< image.height:
+    let
+      skew = shear * float(y)
+      iSkew = int(floor(skew))
+      fSkew = skew - float(iSkew)
+    var oLeft: ColorRGBA
+    for x in 1 ..< image.width:
+      var
+        pixel = image.getRgba(x, y)
+        pixelLeft = pixel * fSkew
+      # for some reason this doesn't work w/ +- operators
+      # pixel = pixel - pixelLeft + oLeft
+      pixel.r = pixel.r - pixelLeft.r + oLeft.r
+      pixel.g = pixel.g - pixelLeft.g + oLeft.g
+      pixel.b = pixel.b - pixelLeft.b + oLeft.b
+      pixel.a = pixel.a - pixelLeft.a + oLeft.a
+      sheared.putRgba(offsetAdd + x + iSkew, y, pixel)
+      oLeft = pixelLeft
+    sheared.putRgba(offsetAdd + iSkew + 1, y, rgba(0, 0, 0, 0))
+  return sheared
+  
+
+proc shearY*(image: Image, shear: float): Image =
+  ## Shears the image vertically; resizes to fit
+  let
+    offset = int(abs(float(image.width) * shear))
+    offsetAdd = if shear > 0: 0 else: offset
+    newHeight = image.height + offset
+  var sheared = newImage(image.width, newHeight, 4)
+  for x in 0 ..< image.width:
+    let
+      skew = shear * float(x)
+      iSkew = int(floor(skew))
+      fSkew = skew - float(iSkew)
+    var oLeft: ColorRGBA
+    for y in 1 ..< image.height:
+      var
+        pixel = image.getRgba(x, y)
+        pixelLeft = pixel * fSkew
+      # for some reason this doesn't work w/ +- operators
+      # pixel = pixel - pixelLeft + oLeft
+      pixel.r = pixel.r - pixelLeft.r + oLeft.r
+      pixel.g = pixel.g - pixelLeft.g + oLeft.g
+      pixel.b = pixel.b - pixelLeft.b + oLeft.b
+      pixel.a = pixel.a - pixelLeft.a + oLeft.a
+      sheared.putRgba(x, offsetAdd + y + iSkew, pixel)
+      oLeft = pixelLeft
+    sheared.putRgba(x, offsetAdd + iSkew + 1, rgba(0, 0, 0, 0))
+  return sheared
+
+
+proc rotate*(image: Image, theta: float): Image =
+  ## Rotates the image by given angle (in degrees)
+  ## using the 3-shear method
+  # Handle easy cases and avoid precision errors
+  case theta.round
+    of 360 or -360: return image
+    of 180 or -180: return image.flipHorizontal.flipVertical
+    of 90: return image.rotate90Degrees
+    else: discard
+  let
+    radians = degToRad(theta)
+    alpha = -tan(radians / 2)
+    beta = sin(radians)
+    newWidth = int(abs(float(image.width) * sin(radians)) +
+                   abs(float(image.height) * cos(radians)))
+    newHeight = int(abs(float(image.width) * cos(radians)) +
+                    abs(float(image.height) * sin(radians)))
+  result = image.shearX(alpha).shearY(beta).shearX(alpha)
+  return result.getSubImage(
+    int((result.width - newWidth)/2),
+    int((result.height - newHeight)/2),
+    newWidth,
+    newHeight
+  )
 
 
 proc removeAlpha*(image: Image) =
