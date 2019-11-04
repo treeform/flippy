@@ -519,12 +519,21 @@ proc getSubImage*(image: Image, x, y, w, h: int): Image =
 
 
 proc rotate90Degrees*(image: Image): Image =
-  ## Rotates the image clockwize
+  ## Rotates the image clockwise
   result = newImage(image.height, image.width, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
       var rgba = image.getRgba(x, y)
       result.putRgba(image.height - y - 1, x, rgba)
+
+
+proc rotateNeg90Degrees*(image: Image): Image =
+  ## Rotates the image anti-clockwise
+  result = newImage(image.height, image.width, image.channels)
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
+      var rgba = image.getRgba(x, y)
+      result.putRgba(y, image.width - x - 1, rgba)
 
 
 proc shearX*(image: Image, shear: float): Image =
@@ -587,15 +596,19 @@ proc shearY*(image: Image, shear: float): Image =
 
 proc rotate*(image: Image, theta: float): Image =
   ## Rotates the image by given angle (in degrees)
-  ## using the 3-shear method
+  ## using the 3-shear method (Paeth method)
   # Handle easy cases and avoid precision errors
-  let rounded = theta.round
-  if rounded mod 360 == 0:
-    return image
-  elif rounded mod 180 == 0 and (rounded / 180) mod 2 == 1:
-    return image.flipHorizontal.flipVertical
-  elif rounded == 90:
-    return image.rotate90Degrees
+  result = image
+  var
+    angle = theta mod 360
+    rotations = 0
+  if angle < -45:
+    angle = angle + 360
+  while angle > 45:
+    angle = angle - 90
+    rotations += 1
+  rotations = rotations mod 4
+  for _ in 1..rotations: result = result.rotateNeg90Degrees()
   let
     radians = degToRad(theta)
     alpha = -tan(radians / 2)
@@ -604,6 +617,7 @@ proc rotate*(image: Image, theta: float): Image =
                    abs(trunc(float(image.height) * cos(radians))))
     newHeight = int(abs(trunc(float(image.width) * cos(radians))) +
                     abs(trunc(float(image.height) * sin(radians))))
+  if alpha == 0.0 and beta == 0.0: return result
   result = image.shearX(alpha).shearY(beta).shearX(alpha)
   return result.getSubImage(
     int((result.width - newWidth)/2),
