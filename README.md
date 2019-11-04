@@ -320,10 +320,18 @@ proc rotate(image: Image, theta: float): Image
 
 ## **proc** rotate90Degrees
 
-Rotates the image clockwize
+Rotates the image clockwise
 
 ```nim
 proc rotate90Degrees(image: Image): Image
+```
+
+## **proc** rotateNeg90Degrees
+
+Rotates the image anti-clockwise
+
+```nim
+proc rotateNeg90Degrees(image: Image): Image
 ```
 
 ## **proc** getSubImage

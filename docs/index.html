@@ -904,6 +904,8 @@ function main() {
     title="getSubImage(image: Image; x, y, w, h: int): Image"><wbr />get<wbr />Sub<wbr />Image<span class="attachedType">Image</span></a></li>
   <li><a class="reference" href="#rotate90Degrees%2CImage"
     title="rotate90Degrees(image: Image): Image"><wbr />rotate90Degrees<span class="attachedType">Image</span></a></li>
+  <li><a class="reference" href="#rotateNeg90Degrees%2CImage"
+    title="rotateNeg90Degrees(image: Image): Image"><wbr />rotate<wbr />Neg90Degrees<span class="attachedType">Image</span></a></li>
   <li><a class="reference" href="#shearX%2CImage%2Cfloat"
     title="shearX(image: Image; shear: float): Image"><wbr />shear<wbr />X<span class="attachedType">Image</span></a></li>
   <li><a class="reference" href="#shearY%2CImage%2Cfloat"
@@ -1173,7 +1175,14 @@ Gets a sub image of the main image
 <dt><pre><span class="Keyword">proc</span> <a href="#rotate90Degrees%2CImage"><span class="Identifier">rotate90Degrees</span></a><span class="Other">(</span><span class="Identifier">image</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a><span class="Other">)</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-Rotates the image clockwize
+Rotates the image clockwise
+
+</dd>
+<a id="rotateNeg90Degrees,Image"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#rotateNeg90Degrees%2CImage"><span class="Identifier">rotateNeg90Degrees</span></a><span class="Other">(</span><span class="Identifier">image</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a><span class="Other">)</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Rotates the image anti-clockwise
 
 </dd>
 <a id="shearX,Image,float"></a>
@@ -1194,7 +1203,7 @@ Shears the image vertically; resizes to fit
 <dt><pre><span class="Keyword">proc</span> <a href="#rotate%2CImage%2Cfloat"><span class="Identifier">rotate</span></a><span class="Other">(</span><span class="Identifier">image</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a><span class="Other">;</span> <span class="Identifier">theta</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-Rotates the image by given angle (in degrees) using the 3-shear method
+Rotates the image by given angle (in degrees) using the 3-shear method (Paeth method)
 
 </dd>
 <a id="removeAlpha,Image"></a>
@@ -1221,7 +1230,7 @@ PNG saves space by encoding alpha = 0 areas as black. but scaling such images le
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br/>
-        <small>Made with Nim. Generated: 2019-11-03 16:21:56 UTC</small>
+        <small>Made with Nim. Generated: 2019-11-04 21:03:01 UTC</small>
       </div>
     </div>
   </div>
