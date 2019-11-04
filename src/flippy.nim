@@ -608,20 +608,22 @@ proc rotate*(image: Image, theta: float): Image =
     angle = angle - 90
     rotations += 1
   rotations = rotations mod 4
-  for _ in 1..rotations: result = result.rotateNeg90Degrees()
+  for _ in 1..rotations: result = result.rotate90Degrees()
+  if angle == 0.0: return result
   let
-    radians = degToRad(theta)
+    radians = degToRad(angle)
     alpha = -tan(radians / 2)
     beta = sin(radians)
-    newWidth = int(abs(trunc(float(image.width) * sin(radians))) +
-                   abs(trunc(float(image.height) * cos(radians))))
-    newHeight = int(abs(trunc(float(image.width) * cos(radians))) +
-                    abs(trunc(float(image.height) * sin(radians))))
   if alpha == 0.0 and beta == 0.0: return result
-  result = image.shearX(alpha).shearY(beta).shearX(alpha)
+  let
+    newWidth = int(trunc(abs(float(result.width) * sin(radians)) +
+                   abs(float(result.height) * cos(radians))))
+    newHeight = int(trunc(abs(float(result.width) * cos(radians)) +
+                    abs(float(result.height) * sin(radians))))
+  result = result.shearX(alpha).shearY(beta).shearX(alpha)
   return result.getSubImage(
-    int((result.width - newWidth)/2),
-    int((result.height - newHeight)/2),
+    1+int((result.width - newWidth)/2),
+    1+int((result.height - newHeight)/2),
     newWidth,
     newHeight
   )
