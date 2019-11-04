@@ -589,11 +589,13 @@ proc rotate*(image: Image, theta: float): Image =
   ## Rotates the image by given angle (in degrees)
   ## using the 3-shear method
   # Handle easy cases and avoid precision errors
-  case theta.round
-    of 360 or -360: return image
-    of 180 or -180: return image.flipHorizontal.flipVertical
-    of 90: return image.rotate90Degrees
-    else: discard
+  let rounded = theta.round
+  if rounded mod 360 == 0:
+    return image
+  elif rounded mod 180 == 0 and (rounded / 180) mod 2 == 1:
+    return image.flipHorizontal.flipVertical
+  elif rounded == 90:
+    return image.rotate90Degrees
   let
     radians = degToRad(theta)
     alpha = -tan(radians / 2)
