@@ -600,10 +600,10 @@ proc rotate*(image: Image, theta: float): Image =
     radians = degToRad(theta)
     alpha = -tan(radians / 2)
     beta = sin(radians)
-    newWidth = int(abs(float(image.width) * sin(radians)) +
-                   abs(float(image.height) * cos(radians)))
-    newHeight = int(abs(float(image.width) * cos(radians)) +
-                    abs(float(image.height) * sin(radians)))
+    newWidth = int(abs(trunc(float(image.width) * sin(radians))) +
+                   abs(trunc(float(image.height) * cos(radians))))
+    newHeight = int(abs(trunc(float(image.width) * cos(radians))) +
+                    abs(trunc(float(image.height) * sin(radians))))
   result = image.shearX(alpha).shearY(beta).shearX(alpha)
   return result.getSubImage(
     int((result.width - newWidth)/2),
