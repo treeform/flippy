@@ -883,11 +883,13 @@ function main() {
   <li><a class="reference" href="#fillRect%2CImage%2CRect%2CColorRGBA"
     title="fillRect(image: Image; rect: Rect; rgba: ColorRGBA)"><wbr />fill<wbr />Rect<span class="attachedType">Image</span></a></li>
   <li><a class="reference" href="#strokeRect%2CImage%2CRect%2CColorRGBA"
-    title="strokeRect(image: var Image; rect: Rect; rgba: ColorRGBA)"><wbr />stroke<wbr />Rect<span class="attachedType">Image</span></a></li>
+    title="strokeRect(image: Image; rect: Rect; rgba: ColorRGBA)"><wbr />stroke<wbr />Rect<span class="attachedType">Image</span></a></li>
   <li><a class="reference" href="#fillCirle%2CImage%2CVec2%2Cfloat%2CColorRGBA"
     title="fillCirle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA)"><wbr />fill<wbr />Cirle<span class="attachedType">Image</span></a></li>
   <li><a class="reference" href="#strokeCirle%2CImage%2CVec2%2Cfloat%2Cfloat%2CColorRGBA"
     title="strokeCirle(image: Image; pos: Vec2; radius: float; border: float; rgba: ColorRGBA)"><wbr />stroke<wbr />Cirle<span class="attachedType">Image</span></a></li>
+  <li><a class="reference" href="#ninePatch%2CImage%2CRect%2Cfloat%2Cfloat%2CColorRGBA%2CColorRGBA"
+    title="ninePatch(image: Image; rect: Rect; radius, border: float; fill, stroke: ColorRGBA)"><wbr />nine<wbr />Patch<span class="attachedType">Image</span></a></li>
   <li><a class="reference" href="#minifyBy2%2CImage"
     title="minifyBy2(image: Image): Image"><wbr />minify<wbr />By2<span class="attachedType">Image</span></a></li>
   <li><a class="reference" href="#minify%2CImage%2Cint"
@@ -911,11 +913,15 @@ function main() {
   <li><a class="reference" href="#shearY%2CImage%2Cfloat"
     title="shearY(image: Image; shear: float): Image"><wbr />shear<wbr />Y<span class="attachedType">Image</span></a></li>
   <li><a class="reference" href="#rotate%2CImage%2Cfloat"
-    title="rotate(image: Image; theta: float): Image"><wbr />rotate<span class="attachedType">Image</span></a></li>
+    title="rotate(image: Image; angle: float): Image"><wbr />rotate<span class="attachedType">Image</span></a></li>
   <li><a class="reference" href="#removeAlpha%2CImage"
     title="removeAlpha(image: Image)"><wbr />remove<wbr />Alpha<span class="attachedType">Image</span></a></li>
   <li><a class="reference" href="#alphaBleed%2CImage"
     title="alphaBleed(image: Image)"><wbr />alpha<wbr />Bleed<span class="attachedType">Image</span></a></li>
+  <li><a class="reference" href="#fillRoundedRect%2CImage%2CRect%2Cfloat%2CColorRGBA"
+    title="fillRoundedRect(image: Image; rect: Rect; radius: float; rgba: ColorRGBA)"><wbr />fill<wbr />Rounded<wbr />Rect<span class="attachedType">Image</span></a></li>
+  <li><a class="reference" href="#strokeRoundedRect%2CImage%2CRect%2Cfloat%2Cfloat%2CColorRGBA"
+    title="strokeRoundedRect(image: Image; rect: Rect; radius, border: float; rgba: ColorRGBA)"><wbr />stroke<wbr />Rounded<wbr />Rect<span class="attachedType">Image</span></a></li>
 
   </ul>
 </li>
@@ -1100,7 +1106,7 @@ Draws a filled rectangle.
 
 </dd>
 <a id="strokeRect,Image,Rect,ColorRGBA"></a>
-<dt><pre><span class="Keyword">proc</span> <a href="#strokeRect%2CImage%2CRect%2CColorRGBA"><span class="Identifier">strokeRect</span></a><span class="Other">(</span><span class="Identifier">image</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a><span class="Other">;</span> <span class="Identifier">rect</span><span class="Other">:</span> <span class="Identifier">Rect</span><span class="Other">;</span> <span class="Identifier">rgba</span><span class="Other">:</span> <span class="Identifier">ColorRGBA</span><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dt><pre><span class="Keyword">proc</span> <a href="#strokeRect%2CImage%2CRect%2CColorRGBA"><span class="Identifier">strokeRect</span></a><span class="Other">(</span><span class="Identifier">image</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a><span class="Other">;</span> <span class="Identifier">rect</span><span class="Other">:</span> <span class="Identifier">Rect</span><span class="Other">;</span> <span class="Identifier">rgba</span><span class="Other">:</span> <span class="Identifier">ColorRGBA</span><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
 Draws a rectangle borders only.
@@ -1120,6 +1126,14 @@ Draws a filled circle with antilaised edges.
 <dd>
 
 Draws a border of circle with antilaised edges.
+
+</dd>
+<a id="ninePatch,Image,Rect,float,float,ColorRGBA,ColorRGBA"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#ninePatch%2CImage%2CRect%2Cfloat%2Cfloat%2CColorRGBA%2CColorRGBA"><span class="Identifier">ninePatch</span></a><span class="Other">(</span><span class="Identifier">image</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a><span class="Other">;</span> <span class="Identifier">rect</span><span class="Other">:</span> <span class="Identifier">Rect</span><span class="Other">;</span> <span class="Identifier">radius</span><span class="Other">,</span> <span class="Identifier">border</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">;</span> <span class="Identifier">fill</span><span class="Other">,</span> <span class="Identifier">stroke</span><span class="Other">:</span> <span class="Identifier">ColorRGBA</span><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma">
+    <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Draws a 9-patch
 
 </dd>
 <a id="minifyBy2,Image"></a>
@@ -1200,7 +1214,7 @@ Shears the image vertically; resizes to fit
 
 </dd>
 <a id="rotate,Image,float"></a>
-<dt><pre><span class="Keyword">proc</span> <a href="#rotate%2CImage%2Cfloat"><span class="Identifier">rotate</span></a><span class="Other">(</span><span class="Identifier">image</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a><span class="Other">;</span> <span class="Identifier">theta</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dt><pre><span class="Keyword">proc</span> <a href="#rotate%2CImage%2Cfloat"><span class="Identifier">rotate</span></a><span class="Other">(</span><span class="Identifier">image</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a><span class="Other">;</span> <span class="Identifier">angle</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">)</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
 Rotates the image by given angle (in degrees) using the 3-shear method (Paeth method)
@@ -1220,6 +1234,22 @@ Removes alpha channel from the images by: Setting it to 255 everywhere.
 PNG saves space by encoding alpha = 0 areas as black. but scaling such images lets the black or gray come out. This bleeds the real colors into invisible space
 
 </dd>
+<a id="fillRoundedRect,Image,Rect,float,ColorRGBA"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#fillRoundedRect%2CImage%2CRect%2Cfloat%2CColorRGBA"><span class="Identifier">fillRoundedRect</span></a><span class="Other">(</span><span class="Identifier">image</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a><span class="Other">;</span> <span class="Identifier">rect</span><span class="Other">:</span> <span class="Identifier">Rect</span><span class="Other">;</span> <span class="Identifier">radius</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">;</span> <span class="Identifier">rgba</span><span class="Other">:</span> <span class="Identifier">ColorRGBA</span><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma">
+    <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Fills image with a rounded rectangle.
+
+</dd>
+<a id="strokeRoundedRect,Image,Rect,float,float,ColorRGBA"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#strokeRoundedRect%2CImage%2CRect%2Cfloat%2Cfloat%2CColorRGBA"><span class="Identifier">strokeRoundedRect</span></a><span class="Other">(</span><span class="Identifier">image</span><span class="Other">:</span> <a href="flippy.html#Image"><span class="Identifier">Image</span></a><span class="Other">;</span> <span class="Identifier">rect</span><span class="Other">:</span> <span class="Identifier">Rect</span><span class="Other">;</span> <span class="Identifier">radius</span><span class="Other">,</span> <span class="Identifier">border</span><span class="Other">:</span> <span class="Identifier">float</span><span class="Other">;</span> <span class="Identifier">rgba</span><span class="Other">:</span> <span class="Identifier">ColorRGBA</span><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma">
+    <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Fills image with a stroked rounded rectangle.
+
+</dd>
 
 </dl></div>
 
@@ -1230,7 +1260,7 @@ PNG saves space by encoding alpha = 0 areas as black. but scaling such images le
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br/>
-        <small>Made with Nim. Generated: 2019-11-04 21:03:01 UTC</small>
+        <small>Made with Nim. Generated: 2019-11-05 05:48:58 UTC</small>
       </div>
     </div>
   </div>
