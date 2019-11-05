@@ -74,9 +74,11 @@ proc `/`[T: ColorRGBA | Color](color: T; v: float): T =
 proc `$`*(image: Image): string =
   ## Display the image path, size and channels.
   if image.filePath.len > 0:
-    return "<Image " & image.filePath & " " & $image.width & "x" & $image.height & ":" & $image.channels & ">"
+    return "<Image " & image.filePath & " " & $image.width & "x" &
+        $image.height & ":" & $image.channels & ">"
   else:
-    return "<Image " & $image.width & "x" & $image.height & ":" & $image.channels & ">"
+    return "<Image " & $image.width & "x" & $image.height & ":" &
+        $image.channels & ">"
 
 
 proc newImage*(width, height, channels: int): Image =
@@ -210,7 +212,12 @@ proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
       destImage.putRgbaSafe(int(dest.x) + x, int(dest.y) + y, rgba)
 
 
-proc blitWithMask*(destImage: Image, srcImage: Image, src, dest: Rect, rgba: ColorRGBA) =
+proc blitWithMask*(
+    destImage: Image,
+    srcImage: Image,
+    src, dest: Rect,
+    rgba: ColorRGBA
+  ) =
   ## Blits rectangle from one image to the other image with masking color.
   assert src.w == dest.w and src.h == dest.h
   for x in 0..<int(src.w):
@@ -233,7 +240,12 @@ proc blitWithMask*(destImage: Image, srcImage: Image, src, dest: Rect, rgba: Col
           destRgba.a = 255
           destImage.putRgba(xdest, ydest, destRgba)
 
-proc computeBounds(destImage: Image, srcImage: Image, mat: Mat4, matInv: Mat4): (int, int, int, int) =
+proc computeBounds(
+    destImage: Image,
+    srcImage: Image,
+    mat: Mat4,
+    matInv: Mat4
+  ): (int, int, int, int) =
   # Computes the bounds.
   let
     bounds = @[
@@ -269,7 +281,7 @@ proc blit*(destImage: Image, srcImage: Image, mat: Mat4) =
   # fill the bounding rectangle
   for x in xStart..<xEnd:
     for y in yStart..<yEnd:
-      let destV =  vec3(float32(x) + 0.5, float32(y) + 0.5, 0)
+      let destV = vec3(float32(x) + 0.5, float32(y) + 0.5, 0)
       let srcV = roundPixelVec(matInv * destV)
       if srcImage.inside(int srcV.x, int srcV.y):
         var rgba = srcImage.getRgba(int srcV.x, int srcV.y)
@@ -304,7 +316,12 @@ proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
           destImage.putRgba(x, y, rgba)
 
 
-proc blitWithMask*(destImage: Image, srcImage: Image, mat: Mat4, rgba: ColorRGBA) =
+proc blitWithMask*(
+    destImage: Image,
+    srcImage: Image,
+    mat: Mat4,
+    rgba: ColorRGBA
+  ) =
   ## Blits one image onto another using matrix with masking color.
   let matInv = mat.inverse()
   let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
@@ -409,7 +426,13 @@ proc fillCirle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
         image.putRgba(x, y, rgbaAA)
 
 
-proc strokeCirle*(image: Image, pos: Vec2, radius: float, border: float, rgba: ColorRGBA) =
+proc strokeCirle*(
+    image: Image,
+    pos: Vec2,
+    radius: float,
+    border: float,
+    rgba: ColorRGBA
+  ) =
   ## Draws a border of circle with antilaised edges.
   let
     minx = max(int(pos.x - radius - border), 0)
@@ -421,7 +444,8 @@ proc strokeCirle*(image: Image, pos: Vec2, radius: float, border: float, rgba: C
       let
         pixelPos = vec2(float x, float y) + vec2(0.5, 0.5)
         pixelDist = pixelPos.dist(pos)
-      if pixelDist > radius - border/2 - sqrt(0.5) and pixelDist < radius + border/2 + sqrt(0.5):
+      if pixelDist > radius - border/2 - sqrt(0.5) and
+          pixelDist < radius + border/2 + sqrt(0.5):
         var touch = 0
         const n = 5
         const r = (n - 1) div 2
@@ -435,7 +459,14 @@ proc strokeCirle*(image: Image, pos: Vec2, radius: float, border: float, rgba: C
         image.putRgba(x, y, rgbaAA)
 
 
-proc ninePatch*(image: Image, rect: Rect, radius, border: float, fill, stroke: ColorRGBA) =
+proc ninePatch*(
+    image: Image,
+    rect: Rect,
+    radius,
+    border: float,
+    fill,
+    stroke: ColorRGBA
+  ) =
   ## Draws a 9-patch
   image.fillRect(rect, fill)
   image.strokeRect(rect, stroke)
@@ -447,10 +478,10 @@ proc minifyBy2*(image: Image): Image =
   for x in 0..<result.width:
     for y in 0..<result.height:
       var color =
-          image.getRgba(x * 2 + 0, y * 2 + 0).color / 4.0 +
-          image.getRgba(x * 2 + 1, y * 2 + 0).color / 4.0 +
-          image.getRgba(x * 2 + 1, y * 2 + 1).color / 4.0 +
-          image.getRgba(x * 2 + 0, y * 2 + 1).color / 4.0
+        image.getRgba(x * 2 + 0, y * 2 + 0).color / 4.0 +
+        image.getRgba(x * 2 + 1, y * 2 + 0).color / 4.0 +
+        image.getRgba(x * 2 + 1, y * 2 + 1).color / 4.0 +
+        image.getRgba(x * 2 + 0, y * 2 + 1).color / 4.0
       result.putRgba(x, y, color.rgba)
 
 
@@ -463,11 +494,16 @@ proc minify*(image: Image, scale: int): Image =
 
 proc magnify*(image: Image, scale: int): Image =
   ## Scales image image up by an integer scale.
-  result = newImage(image.filePath, image.width * scale, image.height * scale, image.channels)
+  result = newImage(
+    image.filePath,
+    image.width * scale,
+    image.height * scale,
+    image.channels
+  )
   for x in 0..<result.width:
     for y in 0..<result.height:
       var rgba =
-          image.getRgba(x div scale, y div scale)
+        image.getRgba(x div scale, y div scale)
       result.putRgba(x, y, rgba)
 
 
@@ -569,7 +605,7 @@ proc shearX*(image: Image, shear: float): Image =
       oLeft = pixelLeft
     sheared.putRgba(offsetAdd + iSkew + 1, y, rgba(0, 0, 0, 0))
   return sheared
-  
+
 
 proc shearY*(image: Image, shear: float): Image =
   ## Shears the image vertically; resizes to fit
@@ -703,14 +739,19 @@ proc alphaBleed*(image: Image) =
       image.putRgba(x, y, rgba)
 
 
-proc fillRoundedRect*(image: Image, rect: Rect, radius: float, rgba: ColorRGBA) =
+proc fillRoundedRect*(
+    image: Image,
+    rect: Rect,
+    radius: float,
+    rgba: ColorRGBA
+  ) =
   ## Fills image with a rounded rectangle.
   image.fill(rgba)
   let borderWidth = radius
   let borderWidthPx = int ceil(radius)
   var corner = newImage(borderWidthPx, borderWidthPx, 4)
   corner.fillCirle(vec2(borderWidth, borderWidth), radius, rgba)
-  image.blit(corner, vec2(0,0))
+  image.blit(corner, vec2(0, 0))
   corner = corner.flipHorizontal()
   image.blit(corner, vec2(rect.w - borderWidth, 0)) # NE
   corner = corner.flipVertical()
@@ -719,7 +760,13 @@ proc fillRoundedRect*(image: Image, rect: Rect, radius: float, rgba: ColorRGBA) 
   image.blit(corner, vec2(0, rect.h - borderWidth)) # SW
 
 
-proc strokeRoundedRect*(image: Image, rect: Rect, radius, border: float, rgba: ColorRGBA) =
+proc strokeRoundedRect*(
+    image: Image,
+    rect: Rect,
+    radius,
+    border: float,
+    rgba: ColorRGBA
+  ) =
   ## Fills image with a stroked rounded rectangle.
   for i in 0 ..< int(border):
     let f = float i
@@ -733,7 +780,7 @@ proc strokeRoundedRect*(image: Image, rect: Rect, radius, border: float, rgba: C
   let borderWidthPx = int ceil(borderWidth)
   var corner = newImage(borderWidthPx, borderWidthPx, 4)
   corner.strokeCirle(vec2(borderWidth, borderWidth), radius, border, rgba)
-  image.blit(corner, vec2(0,0))
+  image.blit(corner, vec2(0, 0))
   corner = corner.flipHorizontal()
   image.blit(corner, vec2(rect.w - borderWidth, 0)) # NE
   corner = corner.flipVertical()
