@@ -53,7 +53,6 @@ block:
 
   main.save("tests/composed.png")
 
-
 block:
   var lenna = loadImage("tests/lenna.png")
   lenna.flipHorizontal.save("tests/lenna.flipHorizontal.png")
@@ -107,6 +106,15 @@ block:
 
 block:
   var image = loadImage("tests/lenna.png")
-  # rotate image by 45 degrees
   image = image.rotate(45)
   image.save("tests/lenna.rotate45Degrees.png")
+
+block:
+  var image = loadImage("tests/lenna.png")
+  image = image.shearX(0.25)
+  image.save("tests/lenna.shearX.png")
+
+block:
+  var image = loadImage("tests/lenna.png")
+  image = image.shearY(0.25)
+  image.save("tests/lenna.shearY.png")
