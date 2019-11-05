@@ -293,12 +293,45 @@ Flips the image around the X axis
 proc flipVertical(image: Image): Image
 ```
 
+## **proc** shearX(image: Image, shear: float): Image
+
+Shears image horizontally.
+
+```nim
+proc shearX(image: Image, shear: float): Image
+```
+
+
+## **proc** shearY(image: Image, shear: float): Image
+
+Shears image vertically.
+
+```nim
+proc shearY(image: Image, shear: float): Image
+```
+
+## **proc** rotate(image: Image, theta: float): Image
+
+Rotates image by theta (in degrees).
+
+```nim
+proc rotate(image: Image, theta: float): Image
+```
+
 ## **proc** rotate90Degrees
 
-Rotates the image clockwize
+Rotates the image clockwise
 
 ```nim
 proc rotate90Degrees(image: Image): Image
+```
+
+## **proc** rotateNeg90Degrees
+
+Rotates the image anti-clockwise
+
+```nim
+proc rotateNeg90Degrees(image: Image): Image
 ```
 
 ## **proc** getSubImage
