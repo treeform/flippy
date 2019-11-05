@@ -636,13 +636,13 @@ proc shearY*(image: Image, shear: float): Image =
   return sheared
 
 
-proc rotate*(image: Image, theta: float): Image =
+proc rotate*(image: Image, angle: float): Image =
   ## Rotates the image by given angle (in degrees)
   ## using the 3-shear method (Paeth method)
   # Handle easy cases and avoid precision errors
   result = image
   var
-    angle = theta mod 360
+    angle = angle mod 360
     rotations = 0
   if angle < -45:
     angle = angle + 360
