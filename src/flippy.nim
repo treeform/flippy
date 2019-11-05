@@ -196,17 +196,17 @@ proc blitWithMask*(destImage: Image, srcImage: Image, src, dest: Rect, rgba: Col
         xdest = int(dest.x) + x
         ydest = int(dest.y) + y
       if destImage.inside(xdest, ydest) and srcImage.inside(xsrc, ysrc):
-        var rgba = srcImage.getRgba(xsrc, ysrc)
-        if rgba.a == uint8(255):
+        var srcRgba = srcImage.getRgba(xsrc, ysrc)
+        if srcRgba.a == uint8(255):
           destImage.putRgba(xdest, ydest, rgba)
-        elif rgba.a > uint8(0):
-          let destRgba = destImage.getRgba(xdest, ydest)
-          let a = float(rgba.a)/255.0
-          rgba.r = uint8(float(destRgba.r) * (1-a) + float(rgba.r) * a)
-          rgba.g = uint8(float(destRgba.g) * (1-a) + float(rgba.g) * a)
-          rgba.b = uint8(float(destRgba.b) * (1-a) + float(rgba.b) * a)
-          rgba.a = 255
-          destImage.putRgba(xdest, ydest, rgba)
+        elif srcRgba.a > uint8(0):
+          var destRgba = destImage.getRgba(xdest, ydest)
+          let a = float(srcRgba.a)/255.0
+          destRgba.r = uint8(float(destRgba.r) * (1-a) + float(rgba.r) * a)
+          destRgba.g = uint8(float(destRgba.g) * (1-a) + float(rgba.g) * a)
+          destRgba.b = uint8(float(destRgba.b) * (1-a) + float(rgba.b) * a)
+          destRgba.a = 255
+          destImage.putRgba(xdest, ydest, destRgba)
 
 proc computeBounds(destImage: Image, srcImage: Image, mat: Mat4, matInv: Mat4): (int, int, int, int) =
   # Computes the bounds.
@@ -346,7 +346,7 @@ proc fillRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
       image.putRgba(x, y, rgba)
 
 
-proc strokeRect*(image: var Image, rect: Rect, rgba: ColorRGBA) =
+proc strokeRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
   ## Draws a rectangle borders only.
   let
     at = rect.xy
@@ -408,6 +408,12 @@ proc strokeCirle*(image: Image, pos: Vec2, radius: float, border: float, rgba: C
         var rgbaAA = rgba
         rgbaAA.a = uint8(float(touch) * 255.0 / (n * n))
         image.putRgba(x, y, rgbaAA)
+
+
+proc ninePatch*(image: Image, rect: Rect, radius, border: float, fill, stroke: ColorRGBA) =
+  ## Draws a 9-patch
+  image.fillRect(rect, fill)
+  image.strokeRect(rect, stroke)
 
 
 proc minifyBy2*(image: Image): Image =
@@ -569,3 +575,41 @@ proc alphaBleed*(image: Image) =
         rgba.a = 0
       image.putRgba(x, y, rgba)
 
+
+proc fillRoundedRect*(image: Image, rect: Rect, radius: float, rgba: ColorRGBA) =
+  ## Fills image with a rounded rectangle.
+  image.fill(rgba)
+  let borderWidth = radius
+  let borderWidthPx = int ceil(radius)
+  var corner = newImage(borderWidthPx, borderWidthPx, 4)
+  corner.fillCirle(vec2(borderWidth, borderWidth), radius, rgba)
+  image.blit(corner, vec2(0,0))
+  corner = corner.flipHorizontal()
+  image.blit(corner, vec2(rect.w - borderWidth, 0)) # NE
+  corner = corner.flipVertical()
+  image.blit(corner, vec2(rect.w - borderWidth, rect.h - borderWidth)) # SE
+  corner = corner.flipHorizontal()
+  image.blit(corner, vec2(0, rect.h - borderWidth)) # SW
+
+
+proc strokeRoundedRect*(image: Image, rect: Rect, radius, border: float, rgba: ColorRGBA) =
+  ## Fills image with a stroked rounded rectangle.
+  for i in 0 ..< int(border):
+    let f = float i
+    image.strokeRect(rect(
+      rect.x + f,
+      rect.y + f,
+      rect.w - f*2,
+      rect.h - f*2,
+    ), rgba)
+  let borderWidth = radius + border/2
+  let borderWidthPx = int ceil(borderWidth)
+  var corner = newImage(borderWidthPx, borderWidthPx, 4)
+  corner.strokeCirle(vec2(borderWidth, borderWidth), radius, border, rgba)
+  image.blit(corner, vec2(0,0))
+  corner = corner.flipHorizontal()
+  image.blit(corner, vec2(rect.w - borderWidth, 0)) # NE
+  corner = corner.flipVertical()
+  image.blit(corner, vec2(rect.w - borderWidth, rect.h - borderWidth)) # SE
+  corner = corner.flipHorizontal()
+  image.blit(corner, vec2(0, rect.h - borderWidth)) # SW
