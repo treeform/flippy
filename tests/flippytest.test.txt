@@ -1,0 +1,15 @@
+# Basic test
+<Image tests/lenna.png 512x512:3>
+(r: 178, g: 68, b: 78, a: 255)
+# Blit tests
+# Flip tests
+# Test for loosing colors when minifying
+# Test fillCirle
+# Test strokeCirle
+# Test fillRoundedRect
+# Test strokeRoundedRect
+# Test ninePatch
+# Test rotate
+# Test shearX
+# Test shearY
+# Test alphaBleed
