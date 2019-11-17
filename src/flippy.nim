@@ -768,6 +768,7 @@ proc strokeRoundedRect*(
     rgba: ColorRGBA
   ) =
   ## Fills image with a stroked rounded rectangle.
+  #var radius = min(radius, rect.w/2)
   for i in 0 ..< int(border):
     let f = float i
     image.strokeRect(rect(
