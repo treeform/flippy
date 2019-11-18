@@ -1,5 +1,5 @@
 # Basic test
-<Image tests/lenna.png 512x512:3>
+<Image lenna.png 512x512:3>
 (r: 178, g: 68, b: 78, a: 255)
 # Blit tests
 # Flip tests

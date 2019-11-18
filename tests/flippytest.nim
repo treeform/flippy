@@ -3,7 +3,7 @@ import flippy, chroma, vmath
 block:
   echo "# Basic test"
   # load an image
-  var image = loadImage("tests/lenna.png")
+  var image = loadImage("lenna.png")
   # echo it out
   echo image
   # get a color pixel
@@ -17,13 +17,13 @@ block:
   # minify image by 2 or 1/2 or scale by 50%
   image = image.minify(2)
   # save the image to a file
-  image.save("tests/lenna2.png")
+  image.save("lenna2.png")
 
 block:
   echo "# Blit tests"
 
   var main = newImage(255, 255, 4)
-  var lenna = loadImage("tests/lenna.png")
+  var lenna = loadImage("lenna.png")
   main.blitWithAlpha(
     lenna,
     scale(vec3(15, 15, 1)) * rotateZ(0.3)
@@ -33,13 +33,13 @@ block:
     scale(vec3(0.1, 0.1, 1)) * rotateZ(-0.3)
   )
 
-  var redSquare = loadImage("tests/redsquare.png")
+  var redSquare = loadImage("redsquare.png")
   main.blitWithAlpha(
     redSquare,
     scale(vec3(1, 1, 1)) * rotateZ(-0.3) * translate(vec3(100, 100, 0))
   )
 
-  var bluestar = loadImage("tests/bluestar.png")
+  var bluestar = loadImage("bluestar.png")
   main.blitWithAlpha(
     bluestar,
     translate(vec3(-50, -50, 0)) *
@@ -48,21 +48,21 @@ block:
     translate(vec3(80, 20, 0))
   )
 
-  var greencircle = loadImage("tests/greencircle.png")
+  var greencircle = loadImage("greencircle.png")
   main.blitWithAlpha(
     greencircle,
     translate(vec3(200, -50, 0))
   )
 
-  main.save("tests/composed.png")
+  main.save("composed.png")
 
 
 block:
   echo "# Flip tests"
-  var lenna = loadImage("tests/lenna.png")
-  lenna.flipHorizontal.save("tests/lenna.flipHorizontal.png")
-  lenna.flipVertical.save("tests/lenna.flipVertical.png")
-  lenna.rotate90Degrees.save("tests/lenna.rotate90Degrees.png")
+  var lenna = loadImage("lenna.png")
+  lenna.flipHorizontal.save("lenna.flipHorizontal.png")
+  lenna.flipVertical.save("lenna.flipVertical.png")
+  lenna.rotate90Degrees.save("lenna.rotate90Degrees.png")
 
 block:
   echo "# Test for loosing colors when minifying"
@@ -79,7 +79,7 @@ block:
   var image = newImage(20, 20, 4)
   image.fillCirle(pos = vec2(10, 10), radius = 10, rgba = rgba(255, 0, 0, 255))
   var image10x = image.magnify(10)
-  image10x.save("tests/fillCirle.png")
+  image10x.save("fillCirle.png")
 
 
 block:
@@ -88,7 +88,7 @@ block:
   image.strokeCirle(pos = vec2(10, 10), radius = 8,
     border = 2, rgba = rgba(255, 0, 0, 255))
   var image10x = image.magnify(10)
-  image10x.save("tests/strokeCirle.png")
+  image10x.save("strokeCirle.png")
 
 
 block:
@@ -96,7 +96,7 @@ block:
   let image = newImage(100, 100, 4)
   image.fillRoundedRect(rect = rect(0, 0, 100, 100),
     radius = 8, rgba = rgba(255, 0, 0, 255))
-  image.save("tests/fillRoundedRect.png")
+  image.save("fillRoundedRect.png")
 
 
 block:
@@ -104,7 +104,7 @@ block:
   let image = newImage(100, 100, 4)
   image.strokeRoundedRect(rect = rect(0, 0, 100, 100),
     radius = 8, border = 4, rgba = rgba(255, 255, 255, 255))
-  image.save("tests/strokeRoundedRect.png")
+  image.save("strokeRoundedRect.png")
 
 
 block:
@@ -113,29 +113,29 @@ block:
   image.ninePatch(rect = rect(0, 0, 100-2, 100-2),
     radius = 8, border = 2,
     fill = rgba(0, 0, 0, 255), stroke = rgba(255, 255, 255, 255))
-  image.save("tests/ninePatch.png")
+  image.save("ninePatch.png")
 
 block:
   echo "# Test rotate"
-  var image = loadImage("tests/lenna.png")
+  var image = loadImage("lenna.png")
   image = image.rotate(45)
-  image.save("tests/lenna.rotate45Degrees.png")
+  image.save("lenna.rotate45Degrees.png")
 
 block:
   echo "# Test shearX"
-  var image = loadImage("tests/lenna.png")
+  var image = loadImage("lenna.png")
   image = image.shearX(0.25)
-  image.save("tests/lenna.shearX.png")
+  image.save("lenna.shearX.png")
 
 block:
   echo "# Test shearY"
-  var image = loadImage("tests/lenna.png")
+  var image = loadImage("lenna.png")
   image = image.shearY(0.25)
-  image.save("tests/lenna.shearY.png")
+  image.save("lenna.shearY.png")
 
 block:
   echo "# Test alphaBleed"
-  var image = loadImage("tests/tree.png")
+  var image = loadImage("tree.png")
   image.alphaBleed()
   image.removeAlpha()
-  image.save("tests/tree.bleed.png")
+  image.save("tree.bleed.png")
