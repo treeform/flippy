@@ -1,6 +1,9 @@
 import math, os
-import stb_image/read as stbi
-import stb_image/write as stbiw
+when defined(useStb):
+  import stb_image/read as stbi
+  import stb_image/write as stbiw
+else:
+  import nimPNG
 import vmath, chroma
 #import print, strutils
 
@@ -103,23 +106,38 @@ proc loadImage*(filePath: string): Image =
   ## Loads a png image.
   var image = Image()
   image.filePath = filePath
-  image.data = stbi.load(
-    image.filePath,
-    image.width,
-    image.height,
-    image.channels,
-    stbi.Default)
+  when defined(useStb):
+    image.data = stbi.load(
+      image.filePath,
+      image.width,
+      image.height,
+      image.channels,
+      stbi.Default)
+  else:
+    let png = loadPNG32(filePath)
+    image.width = png.width
+    image.height = png.height
+    image.channels = 4
+    image.data = cast[seq[uint8]](png.data)
   return image
 
 
 proc save*(image: Image) =
   ## Saves a png image.
-  var sucess = writePNG(
-    image.filePath,
-    image.width,
-    image.height,
-    image.channels,
-    image.data)
+  when defined(useStb):
+    var sucess = writePNG(
+      image.filePath,
+      image.width,
+      image.height,
+      image.channels,
+      image.data)
+  else:
+    var sucess = savePNG32(
+      image.filePath,
+      cast[string](image.data),
+      image.width,
+      image.height
+    )
   if not sucess:
     raise newException(Exception, "Failed to save Image: " & image.filePath)
 
