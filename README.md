@@ -1,6 +1,6 @@
 # Flippy
 
-![Mpeg Logo](docs/flippyLogo.png)
+![Flippy Logo](docs/flippyLogo.png)
 
 Flippy is a simple 2d image and drawing library.
 
@@ -58,7 +58,7 @@ Image = ref object
 Display the image path, size and channels.
 
 ```nim
-proc `$`(image: Image): string 
+proc `$`(image: Image): string
 ```
 
 ## **proc** newImage
@@ -66,7 +66,7 @@ proc `$`(image: Image): string
 Creates a new image with appropriate dimensions.
 
 ```nim
-proc newImage(width, height, channels: int): Image 
+proc newImage(width, height, channels: int): Image
 ```
 
 ## **proc** newImage
@@ -74,7 +74,7 @@ proc newImage(width, height, channels: int): Image
 Creates a new image with a path.
 
 ```nim
-proc newImage(filePath: string; width, height, channels: int): Image 
+proc newImage(filePath: string; width, height, channels: int): Image
 ```
 
 ## **proc** loadImage
@@ -162,7 +162,7 @@ proc putRgbaSafe(image: Image; x, y: int; rgba: ColorRGBA) {.inline.}
 Blits rectangle from one image to the other image.
 
 ```nim
-proc blit(destImage: Image; srcImage: Image; pos: Vec2) 
+proc blit(destImage: Image; srcImage: Image; pos: Vec2)
 ```
 
 ## **proc** blit
@@ -170,7 +170,7 @@ proc blit(destImage: Image; srcImage: Image; pos: Vec2)
 Blits rectangle from one image to the other image.
 
 ```nim
-proc blit(destImage: Image; srcImage: Image; src, dest: Rect) 
+proc blit(destImage: Image; srcImage: Image; src, dest: Rect)
 ```
 
 ## **proc** blitWithMask
@@ -178,7 +178,7 @@ proc blit(destImage: Image; srcImage: Image; src, dest: Rect)
 Blits rectangle from one image to the other image with masking color.
 
 ```nim
-proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; rgba: ColorRGBA) 
+proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; rgba: ColorRGBA)
 ```
 
 ## **proc** blit
@@ -186,7 +186,7 @@ proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; rgba: Colo
 Blits one image onto another using matrix with alpha blending.
 
 ```nim
-proc blit(destImage: Image; srcImage: Image; mat: Mat4) 
+proc blit(destImage: Image; srcImage: Image; mat: Mat4)
 ```
 
 ## **proc** blitWithAlpha
@@ -194,7 +194,7 @@ proc blit(destImage: Image; srcImage: Image; mat: Mat4)
 Blits one image onto another using matrix with alpha blending.
 
 ```nim
-proc blitWithAlpha(destImage: Image; srcImage: Image; mat: Mat4) 
+proc blitWithAlpha(destImage: Image; srcImage: Image; mat: Mat4)
 ```
 
 ## **proc** blitWithMask
@@ -202,7 +202,7 @@ proc blitWithAlpha(destImage: Image; srcImage: Image; mat: Mat4)
 Blits one image onto another using matrix with masking color.
 
 ```nim
-proc blitWithMask(destImage: Image; srcImage: Image; mat: Mat4; rgba: ColorRGBA) 
+proc blitWithMask(destImage: Image; srcImage: Image; mat: Mat4; rgba: ColorRGBA)
 ```
 
 ## **proc** line
@@ -210,7 +210,7 @@ proc blitWithMask(destImage: Image; srcImage: Image; mat: Mat4; rgba: ColorRGBA)
 Draws a line from one at vec to to vec.
 
 ```nim
-proc line(image: Image; at, to: Vec2; rgba: ColorRGBA) 
+proc line(image: Image; at, to: Vec2; rgba: ColorRGBA)
 ```
 
 ## **proc** fillRect
@@ -218,7 +218,7 @@ proc line(image: Image; at, to: Vec2; rgba: ColorRGBA)
 Draws a filled rectangle.
 
 ```nim
-proc fillRect(image: Image; rect: Rect; rgba: ColorRGBA) 
+proc fillRect(image: Image; rect: Rect; rgba: ColorRGBA)
 ```
 
 ## **proc** strokeRect
@@ -226,7 +226,7 @@ proc fillRect(image: Image; rect: Rect; rgba: ColorRGBA)
 Draws a rectangle borders only.
 
 ```nim
-proc strokeRect(image: Image; rect: Rect; rgba: ColorRGBA) 
+proc strokeRect(image: Image; rect: Rect; rgba: ColorRGBA)
 ```
 
 ## **proc** fillCirle
@@ -234,7 +234,7 @@ proc strokeRect(image: Image; rect: Rect; rgba: ColorRGBA)
 Draws a filled circle with antilaised edges.
 
 ```nim
-proc fillCirle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA) 
+proc fillCirle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA)
 ```
 
 ## **proc** strokeCirle
@@ -242,7 +242,7 @@ proc fillCirle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA)
 Draws a border of circle with antilaised edges.
 
 ```nim
-proc strokeCirle(image: Image; pos: Vec2; radius: float; border: float; rgba: ColorRGBA) 
+proc strokeCirle(image: Image; pos: Vec2; radius: float; border: float; rgba: ColorRGBA)
 ```
 
 ## **proc** ninePatch
@@ -250,7 +250,7 @@ proc strokeCirle(image: Image; pos: Vec2; radius: float; border: float; rgba: Co
 Draws a 9-patch
 
 ```nim
-proc ninePatch(image: Image; rect: Rect; radius, border: float; fill, stroke: ColorRGBA) 
+proc ninePatch(image: Image; rect: Rect; radius, border: float; fill, stroke: ColorRGBA)
 ```
 
 ## **proc** minifyBy2
@@ -258,7 +258,7 @@ proc ninePatch(image: Image; rect: Rect; radius, border: float; fill, stroke: Co
 Scales the image down by an integer scale.
 
 ```nim
-proc minifyBy2(image: Image): Image 
+proc minifyBy2(image: Image): Image
 ```
 
 ## **proc** minify
@@ -266,7 +266,7 @@ proc minifyBy2(image: Image): Image
 Scales the image down by an integer scale.
 
 ```nim
-proc minify(image: Image; scale: int): Image 
+proc minify(image: Image; scale: int): Image
 ```
 
 ## **proc** magnify
@@ -274,7 +274,7 @@ proc minify(image: Image; scale: int): Image
 Scales image image up by an integer scale.
 
 ```nim
-proc magnify(image: Image; scale: int): Image 
+proc magnify(image: Image; scale: int): Image
 ```
 
 ## **proc** fill
@@ -290,7 +290,7 @@ proc fill(image: Image; rgba: ColorRGBA) {.raises: [Exception].}
 Flips the image around the Y axis
 
 ```nim
-proc flipHorizontal(image: Image): Image 
+proc flipHorizontal(image: Image): Image
 ```
 
 ## **proc** flipVertical
@@ -298,7 +298,7 @@ proc flipHorizontal(image: Image): Image
 Flips the image around the X axis
 
 ```nim
-proc flipVertical(image: Image): Image 
+proc flipVertical(image: Image): Image
 ```
 
 ## **proc** getSubImage
@@ -306,7 +306,7 @@ proc flipVertical(image: Image): Image
 Gets a sub image of the main image
 
 ```nim
-proc getSubImage(image: Image; x, y, w, h: int): Image 
+proc getSubImage(image: Image; x, y, w, h: int): Image
 ```
 
 ## **proc** rotate90Degrees
@@ -314,7 +314,7 @@ proc getSubImage(image: Image; x, y, w, h: int): Image
 Rotates the image clockwise
 
 ```nim
-proc rotate90Degrees(image: Image): Image 
+proc rotate90Degrees(image: Image): Image
 ```
 
 ## **proc** rotateNeg90Degrees
@@ -322,7 +322,7 @@ proc rotate90Degrees(image: Image): Image
 Rotates the image anti-clockwise
 
 ```nim
-proc rotateNeg90Degrees(image: Image): Image 
+proc rotateNeg90Degrees(image: Image): Image
 ```
 
 ## **proc** shearX
@@ -330,7 +330,7 @@ proc rotateNeg90Degrees(image: Image): Image
 Shears the image horizontally; resizes to fit
 
 ```nim
-proc shearX(image: Image; shear: float): Image 
+proc shearX(image: Image; shear: float): Image
 ```
 
 ## **proc** shearY
@@ -338,7 +338,7 @@ proc shearX(image: Image; shear: float): Image
 Shears the image vertically; resizes to fit
 
 ```nim
-proc shearY(image: Image; shear: float): Image 
+proc shearY(image: Image; shear: float): Image
 ```
 
 ## **proc** rotate
@@ -346,7 +346,7 @@ proc shearY(image: Image; shear: float): Image
 Rotates the image by given angle (in degrees) using the 3-shear method (Paeth method)
 
 ```nim
-proc rotate(image: Image; angle: float): Image 
+proc rotate(image: Image; angle: float): Image
 ```
 
 ## **proc** removeAlpha
@@ -354,7 +354,7 @@ proc rotate(image: Image; angle: float): Image
 Removes alpha channel from the images by: Setting it to 255 everywhere.
 
 ```nim
-proc removeAlpha(image: Image) 
+proc removeAlpha(image: Image)
 ```
 
 ## **proc** alphaBleed
@@ -362,7 +362,7 @@ proc removeAlpha(image: Image)
 PNG saves space by encoding alpha = 0 areas as black. but scaling such images lets the black or gray come out. This bleeds the real colors into invisible space
 
 ```nim
-proc alphaBleed(image: Image) 
+proc alphaBleed(image: Image)
 ```
 
 ## **proc** fillRoundedRect
@@ -378,6 +378,6 @@ proc fillRoundedRect(image: Image; rect: Rect; radius: float; rgba: ColorRGBA) {
 Fills image with a stroked rounded rectangle.
 
 ```nim
-proc strokeRoundedRect(image: Image; rect: Rect; radius, border: float; rgba: ColorRGBA) 
+proc strokeRoundedRect(image: Image; rect: Rect; radius, border: float; rgba: ColorRGBA)
 ```
 
