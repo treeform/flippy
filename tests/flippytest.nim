@@ -139,3 +139,9 @@ block:
   image.alphaBleed()
   image.removeAlpha()
   image.save("tree.bleed.png")
+
+block:
+  echo "# Unicode file name"
+  var image = loadImage("树.png")
+  assert image.width != 0
+  assert image.height != 0
