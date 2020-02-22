@@ -132,12 +132,21 @@ proc save*(image: Image) =
       image.channels,
       image.data)
   else:
-    var sucess = savePNG32(
-      image.filePath,
-      cast[string](image.data),
-      image.width,
-      image.height
-    )
+    var sucess = false
+    if image.channels == 4:
+      sucess = savePNG32(
+        image.filePath,
+        cast[string](image.data),
+        image.width,
+        image.height
+      )
+    elif image.channels == 3:
+      sucess = savePNG24(
+        image.filePath,
+        cast[string](image.data),
+        image.width,
+        image.height
+      )
   if not sucess:
     raise newException(Exception, "Failed to save Image: " & image.filePath)
 
@@ -806,3 +815,69 @@ proc strokeRoundedRect*(
   image.blit(corner, vec2(rect.w - borderWidth, rect.h - borderWidth)) # SE
   corner = corner.flipHorizontal()
   image.blit(corner, vec2(0, rect.h - borderWidth)) # SW
+
+
+proc copy*(image: Image): Image =
+  ## Copies an image creating a new image.
+  result = newImage(image.width, image.height, image.channels)
+  result.data = image.data
+
+
+proc blur*(
+    image: Image,
+    xBlur: int,
+    yBlur: int
+  ): Image =
+  ## Blurs the image by x and y dirctions.
+  var
+    blurX: Image
+    blurY: Image
+
+  if xBlur == 0 and yBlur == 0:
+    return image.copy()
+
+  if xBlur > 0:
+    blurX = newImage(image.width, image.height, image.channels)
+    for x in 0 ..< image.width:
+      for y in 0 ..< image.height:
+        var c: Color
+        for xb in 0 .. xBlur:
+          let c2 = image.getRgbaSafe(x + xb - xBlur div 2, y).color
+          c.r += c2.r
+          c.g += c2.g
+          c.b += c2.b
+          c.a += c2.a
+        c.r = c.r / (xBlur.float + 1)
+        c.g = c.g / (xBlur.float + 1)
+        c.b = c.b / (xBlur.float + 1)
+        c.a = c.a / (xBlur.float + 1)
+        if c.a != 0.0 and c.rgba.r == 0:
+          echo c
+          echo c.rgba
+        blurX.putRgba(x, y, c.rgba)
+  else:
+    blurX = image
+
+  if yBlur > 0:
+    blurY = newImage(image.width, image.height, image.channels)
+    for x in 0 ..< image.width:
+      for y in 0 ..< image.height:
+        var c: Color
+        for yb in 0 .. yBlur:
+          let c2 = blurX.getRgbaSafe(x, y + yb - yBlur div 2).color
+          c.r += c2.r
+          c.g += c2.g
+          c.b += c2.b
+          c.a += c2.a
+        c.r = c.r / (yBlur.float + 1)
+        c.g = c.g / (yBlur.float + 1)
+        c.b = c.b / (yBlur.float + 1)
+        c.a = c.a / (yBlur.float + 1)
+        if c.a != 0.0 and c.rgba.r == 0:
+          echo c
+          echo c.rgba
+        blurY.putRgba(x, y, c.rgba)
+  else:
+    blurY = blurX
+
+  return blurY
