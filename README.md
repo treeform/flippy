@@ -50,7 +50,6 @@ Image = ref object
   channels*: int
   format*: int
   data*: seq[uint8]
-
 ```
 
 ## **proc** `$`
@@ -82,7 +81,7 @@ proc newImage(filePath: string; width, height, channels: int): Image
 Loads a png image.
 
 ```nim
-proc loadImage(filePath: string): Image {.raises: [STBIException].}
+proc loadImage(filePath: string): Image {.raises: [], tags: [ReadIOEffect, RootEffect, WriteIOEffect].}
 ```
 
 ## **proc** save
@@ -90,7 +89,7 @@ proc loadImage(filePath: string): Image {.raises: [STBIException].}
 Saves a png image.
 
 ```nim
-proc save(image: Image) {.raises: [Exception].}
+proc save(image: Image) {.raises: [Exception], tags: [RootEffect, WriteIOEffect].}
 ```
 
 ## **proc** save
@@ -98,7 +97,7 @@ proc save(image: Image) {.raises: [Exception].}
 Sets image path and save the image.
 
 ```nim
-proc save(image: Image; filePath: string) {.raises: [Exception].}
+proc save(image: Image; filePath: string) {.raises: [Exception],                                    tags: [RootEffect, WriteIOEffect].}
 ```
 
 ## **proc** inside
@@ -379,4 +378,20 @@ Fills image with a stroked rounded rectangle.
 
 ```nim
 proc strokeRoundedRect(image: Image; rect: Rect; radius, border: float; rgba: ColorRGBA)
+```
+
+## **proc** copy
+
+Copies an image creating a new image.
+
+```nim
+proc copy(image: Image): Image
+```
+
+## **proc** blur
+
+Blurs the image by x and y dirctions.
+
+```nim
+proc blur(image: Image; xBlur: int; yBlur: int): Image
 ```
