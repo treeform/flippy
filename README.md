@@ -380,4 +380,3 @@ Fills image with a stroked rounded rectangle.
 ```nim
 proc strokeRoundedRect(image: Image; rect: Rect; radius, border: float; rgba: ColorRGBA)
 ```
-
