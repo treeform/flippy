@@ -4,8 +4,6 @@
 
 Flippy is a simple 2d image and drawing library.
 
-See API reference: https://treeform.github.io/flippy/
-
 Basic usage:
 
 ```nim
