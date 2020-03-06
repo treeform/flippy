@@ -4,9 +4,9 @@
 
 Flippy is a simple 2d image and drawing library.
 
-See api reference: https://treeform.github.io/flippy/
+See API reference: https://treeform.github.io/flippy/
 
-Basic ussage:
+Basic usage:
 
 ```nim
 # load an image
@@ -27,8 +27,6 @@ image = image.minify(2)
 image.save("tests/lenna2.png")
 ```
 
-Into
-
 ![Alt text](tests/lenna2.png?raw=true "Title")
 
 
@@ -44,12 +42,12 @@ Main image object that holds the bitmap data.
 
 ```nim
 Image = ref object
-  filePath*: string
-  width*: int
-  height*: int
-  channels*: int
-  format*: int
-  data*: seq[uint8]
+ filePath*: string
+ width*: int
+ height*: int
+ channels*: int
+ format*: int
+ data*: seq[uint8]
 ```
 
 ## **proc** `$`
@@ -81,7 +79,7 @@ proc newImage(filePath: string; width, height, channels: int): Image
 Loads a png image.
 
 ```nim
-proc loadImage(filePath: string): Image {.raises: [], tags: [ReadIOEffect, RootEffect, WriteIOEffect].}
+proc loadImage(filePath: string): Image {tags: [ReadIOEffect, RootEffect, WriteIOEffect].}
 ```
 
 ## **proc** save
@@ -97,12 +95,12 @@ proc save(image: Image) {.raises: [Exception], tags: [RootEffect, WriteIOEffect]
 Sets image path and save the image.
 
 ```nim
-proc save(image: Image; filePath: string) {.raises: [Exception],                                    tags: [RootEffect, WriteIOEffect].}
+proc save(image: Image; filePath: string) {.raises: [Exception], tags: [RootEffect, WriteIOEffect].}
 ```
 
 ## **proc** inside
 
-Returns true if x,y is inside the image.
+Returns true if (x, y) is inside the image.
 
 ```nim
 proc inside(image: Image; x, y: int): bool {.inline.}
@@ -142,7 +140,7 @@ proc putRgba(image: Image; x, y: int; rgba: ColorRGBA) {.inline.}
 
 ## **proc** putRgba
 
-Puts a ColorRGBA pixel back  as x, y floats (does not do blending).
+Puts a ColorRGBA pixel back as x, y floats (does not do blending).
 
 ```nim
 proc putRgba(image: Image; x, y: float64; rgba: ColorRGBA) {.inline.}
@@ -230,7 +228,7 @@ proc strokeRect(image: Image; rect: Rect; rgba: ColorRGBA)
 
 ## **proc** fillCirle
 
-Draws a filled circle with antilaised edges.
+Draws a filled circle with antialiased edges.
 
 ```nim
 proc fillCirle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA)
@@ -238,7 +236,7 @@ proc fillCirle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA)
 
 ## **proc** strokeCirle
 
-Draws a border of circle with antilaised edges.
+Draws a border of circle with antialiased edges.
 
 ```nim
 proc strokeCirle(image: Image; pos: Vec2; radius: float; border: float; rgba: ColorRGBA)
@@ -286,7 +284,7 @@ proc fill(image: Image; rgba: ColorRGBA) {.raises: [Exception].}
 
 ## **proc** flipHorizontal
 
-Flips the image around the Y axis
+Flips the image around the Y axis.
 
 ```nim
 proc flipHorizontal(image: Image): Image
@@ -294,7 +292,7 @@ proc flipHorizontal(image: Image): Image
 
 ## **proc** flipVertical
 
-Flips the image around the X axis
+Flips the image around the X axis.
 
 ```nim
 proc flipVertical(image: Image): Image
@@ -302,7 +300,7 @@ proc flipVertical(image: Image): Image
 
 ## **proc** getSubImage
 
-Gets a sub image of the main image
+Gets a sub image of the main image.
 
 ```nim
 proc getSubImage(image: Image; x, y, w, h: int): Image
@@ -310,7 +308,7 @@ proc getSubImage(image: Image; x, y, w, h: int): Image
 
 ## **proc** rotate90Degrees
 
-Rotates the image clockwise
+Rotates the image clockwise.
 
 ```nim
 proc rotate90Degrees(image: Image): Image
@@ -318,7 +316,7 @@ proc rotate90Degrees(image: Image): Image
 
 ## **proc** rotateNeg90Degrees
 
-Rotates the image anti-clockwise
+Rotates the image anti-clockwise.
 
 ```nim
 proc rotateNeg90Degrees(image: Image): Image
@@ -326,7 +324,7 @@ proc rotateNeg90Degrees(image: Image): Image
 
 ## **proc** shearX
 
-Shears the image horizontally; resizes to fit
+Shears the image horizontally; resizes to fit.
 
 ```nim
 proc shearX(image: Image; shear: float): Image
@@ -334,7 +332,7 @@ proc shearX(image: Image; shear: float): Image
 
 ## **proc** shearY
 
-Shears the image vertically; resizes to fit
+Shears the image vertically; resizes to fit.
 
 ```nim
 proc shearY(image: Image; shear: float): Image
@@ -358,7 +356,7 @@ proc removeAlpha(image: Image)
 
 ## **proc** alphaBleed
 
-PNG saves space by encoding alpha = 0 areas as black. but scaling such images lets the black or gray come out. This bleeds the real colors into invisible space
+PNG saves space by encoding alpha = 0 areas as black however scaling such images lets the black or gray come out. This bleeds the real colors into invisible space.
 
 ```nim
 proc alphaBleed(image: Image)
@@ -390,7 +388,7 @@ proc copy(image: Image): Image
 
 ## **proc** blur
 
-Blurs the image by x and y dirctions.
+Blurs the image by x and y directions.
 
 ```nim
 proc blur(image: Image; xBlur: int; yBlur: int): Image

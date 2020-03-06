@@ -67,7 +67,7 @@ proc `div`[T: ColorRGBA | Color](rgba: T; i: uint8): T =
 
 
 proc `/`[T: ColorRGBA | Color](color: T; v: float): T =
-  ## Divide a color by an float amount.
+  ## Divide a color by a float amount.
   result.r = color.r / v
   result.g = color.g / v
   result.b = color.b / v
@@ -158,7 +158,7 @@ proc save*(image: Image, filePath: string) =
 
 
 proc inside*(image: Image, x, y: int): bool {.inline.} =
-  ## Returns true if x,y is inside the image.
+  ## Returns true if (x, y) is inside the image.
   x >= 0 and x < image.width and y >= 0 and y < image.height
 
 
@@ -212,7 +212,7 @@ proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
 
 
 proc putRgba*(image: Image, x, y: float64, rgba: ColorRGBA) {.inline.} =
-  ## Puts a ColorRGBA pixel back  as x, y floats (does not do blending).
+  ## Puts a ColorRGBA pixel back as x, y floats (does not do blending).
   putRgba(image, int x, int y, rgba)
 
 
@@ -427,7 +427,7 @@ proc strokeRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
 
 
 proc fillCirle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
-  ## Draws a filled circle with antilaised edges.
+  ## Draws a filled circle with antialiased edges.
   let
     minx = max(int(pos.x - radius), 0)
     maxx = min(int(pos.x + radius), image.width)
@@ -460,7 +460,7 @@ proc strokeCirle*(
     border: float,
     rgba: ColorRGBA
   ) =
-  ## Draws a border of circle with antilaised edges.
+  ## Draws a border of circle with antialiased edges.
   let
     minx = max(int(pos.x - radius - border), 0)
     maxx = min(int(pos.x + radius + border), image.width)
@@ -561,7 +561,7 @@ proc fill*(image: Image, rgba: ColorRgba) =
 
 
 proc flipHorizontal*(image: Image): Image =
-  ## Flips the image around the Y axis
+  ## Flips the image around the Y axis.
   result = newImage(image.width, image.height, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
@@ -571,7 +571,7 @@ proc flipHorizontal*(image: Image): Image =
 
 
 proc flipVertical*(image: Image): Image =
-  ## Flips the image around the X axis
+  ## Flips the image around the X axis.
   result = newImage(image.width, image.height, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
@@ -580,7 +580,7 @@ proc flipVertical*(image: Image): Image =
 
 
 proc getSubImage*(image: Image, x, y, w, h: int): Image =
-  ## Gets a sub image of the main image
+  ## Gets a sub image of the main image.
   result = newImage(w, h, image.channels)
   for x2 in 0..<w:
     for y2 in 0..<h:
@@ -588,7 +588,7 @@ proc getSubImage*(image: Image, x, y, w, h: int): Image =
 
 
 proc rotate90Degrees*(image: Image): Image =
-  ## Rotates the image clockwise
+  ## Rotates the image clockwise.
   result = newImage(image.height, image.width, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
@@ -597,7 +597,7 @@ proc rotate90Degrees*(image: Image): Image =
 
 
 proc rotateNeg90Degrees*(image: Image): Image =
-  ## Rotates the image anti-clockwise
+  ## Rotates the image anti-clockwise.
   result = newImage(image.height, image.width, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
@@ -606,7 +606,7 @@ proc rotateNeg90Degrees*(image: Image): Image =
 
 
 proc shearX*(image: Image, shear: float): Image =
-  ## Shears the image horizontally; resizes to fit
+  ## Shears the image horizontally; resizes to fit.
   let
     offset = int(abs(float(image.height) * shear))
     offsetAdd = if shear > 0: 0 else: offset
@@ -635,7 +635,7 @@ proc shearX*(image: Image, shear: float): Image =
 
 
 proc shearY*(image: Image, shear: float): Image =
-  ## Shears the image vertically; resizes to fit
+  ## Shears the image vertically; resizes to fit.
   let
     offset = int(abs(float(image.width) * shear))
     offsetAdd = if shear > 0: 0 else: offset
@@ -709,9 +709,9 @@ proc removeAlpha*(image: Image) =
 
 
 proc alphaBleed*(image: Image) =
-  ## PNG saves space by encoding alpha = 0 areas as black.
-  ## but scaling such images lets the black or gray come out.
-  ## This bleeds the real colors into invisible space
+  ## PNG saves space by encoding alpha = 0 areas as black however
+  ## scaling such images lets the black or gray come out.
+  ## This bleeds the real colors into invisible space.
 
   proc minifyBy2Alpha(image: Image): Image =
     ## Scales the image down by an integer scale.
@@ -828,7 +828,7 @@ proc blur*(
     xBlur: int,
     yBlur: int
   ): Image =
-  ## Blurs the image by x and y dirctions.
+  ## Blurs the image by x and y directions.
   var
     blurX: Image
     blurY: Image
