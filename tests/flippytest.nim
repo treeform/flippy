@@ -162,4 +162,3 @@ block:
   var image = loadImage("树.png")
   assert image.width != 0
   assert image.height != 0
-
