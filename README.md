@@ -44,12 +44,12 @@ Main image object that holds the bitmap data.
 
 ```nim
 Image = ref object
-  filePath*: string
-  width*: int
-  height*: int
-  channels*: int
-  format*: int
-  data*: seq[uint8]
+ filePath*: string
+ width*: int
+ height*: int
+ channels*: int
+ format*: int
+ data*: seq[uint8]
 ```
 
 ## **proc** `$`
@@ -81,7 +81,7 @@ proc newImage(filePath: string; width, height, channels: int): Image
 Loads a png image.
 
 ```nim
-proc loadImage(filePath: string): Image {.raises: [], tags: [ReadIOEffect, RootEffect, WriteIOEffect].}
+proc loadImage(filePath: string): Image {tags: [ReadIOEffect, RootEffect, WriteIOEffect].}
 ```
 
 ## **proc** save
@@ -97,7 +97,7 @@ proc save(image: Image) {.raises: [Exception], tags: [RootEffect, WriteIOEffect]
 Sets image path and save the image.
 
 ```nim
-proc save(image: Image; filePath: string) {.raises: [Exception],                                    tags: [RootEffect, WriteIOEffect].}
+proc save(image: Image; filePath: string) {.raises: [Exception], tags: [RootEffect, WriteIOEffect].}
 ```
 
 ## **proc** inside
