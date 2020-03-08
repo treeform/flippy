@@ -1,4 +1,4 @@
-import flippy, chroma, vmath
+import chroma, flippy, vmath
 
 block:
   echo "# Test Blur"
@@ -12,8 +12,6 @@ block:
   image.blur(16, 0).save("blur16x0.png")
   image.blur(0, 16).save("blur0x16.png")
   image.blur(16, 16).save("blur16x16.png")
-
-if true: quit()
 
 block:
   echo "# Basic test"
