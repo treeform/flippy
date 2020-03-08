@@ -1,12 +1,9 @@
-import math, os
+import math, os, vmath, chroma
 when defined(useStb):
   import stb_image/read as stbi
   import stb_image/write as stbiw
 else:
   import nimPNG
-import vmath, chroma
-#import print, strutils
-
 
 type Image* = ref object
   ## Main image object that holds the bitmap data.
@@ -17,14 +14,12 @@ type Image* = ref object
   format*: int
   data*: seq[uint8]
 
-
 proc `+`[T: ColorRGBA | Color](a, b: T): T =
   ## Adds two colors together.
   result.r = a.r + b.r
   result.g = a.g + b.g
   result.b = a.b + b.b
   result.a = a.a + b.a
-
 
 proc `-`[T: ColorRGBA | Color](a, b: T): T =
   ## Subtracts two colors.
@@ -33,14 +28,12 @@ proc `-`[T: ColorRGBA | Color](a, b: T): T =
   result.b = a.b - b.b
   result.a = a.a - a.a
 
-
 proc `+`[T: ColorRGBA | Color](a: T, b: uint8): T =
   ## Adds constant to color.
   result.r = a.r + b
   result.g = a.g + b
   result.b = a.b + b
   result.a = a.a + b
-
 
 proc `-`[T: ColorRGBA | Color](a: T, b: uint8): T =
   ## Subtracts constant from color.
@@ -49,14 +42,12 @@ proc `-`[T: ColorRGBA | Color](a: T, b: uint8): T =
   result.b = a.b - b
   result.a = a.a - b
 
-
 proc `*`[T: ColorRGBA | Color](rgba: T; i: float): T =
   ## Multiply color by constant.
   result.r = uint8(float(rgba.r) * i)
   result.g = uint8(float(rgba.g) * i)
   result.b = uint8(float(rgba.b) * i)
   result.a = uint8(float(rgba.a) * i)
-
 
 proc `div`[T: ColorRGBA | Color](rgba: T; i: uint8): T =
   ## Integer divide a color by an integer amount.
@@ -65,14 +56,12 @@ proc `div`[T: ColorRGBA | Color](rgba: T; i: uint8): T =
   result.b = rgba.b div i
   result.a = rgba.a div i
 
-
 proc `/`[T: ColorRGBA | Color](color: T; v: float): T =
   ## Divide a color by a float amount.
   result.r = color.r / v
   result.g = color.g / v
   result.b = color.b / v
   result.a = color.a / v
-
 
 proc `$`*(image: Image): string =
   ## Display the image path, size and channels.
@@ -82,7 +71,6 @@ proc `$`*(image: Image): string =
   else:
     return "<Image " & $image.width & "x" & $image.height & ":" &
         $image.channels & ">"
-
 
 proc newImage*(width, height, channels: int): Image =
   ## Creates a new image with appropriate dimensions.
@@ -94,13 +82,11 @@ proc newImage*(width, height, channels: int): Image =
   image.data = newSeq[uint8](width * height * channels)
   return image
 
-
 proc newImage*(filePath: string, width, height, channels: int): Image =
   ## Creates a new image with a path.
   var image = newImage(width, height, channels)
   image.filePath = filePath
   return image
-
 
 proc loadImage*(filePath: string): Image =
   ## Loads a png image.
@@ -120,7 +106,6 @@ proc loadImage*(filePath: string): Image =
     image.channels = 4
     image.data = cast[seq[uint8]](png.data)
   return image
-
 
 proc save*(image: Image) =
   ## Saves a png image.
@@ -150,17 +135,14 @@ proc save*(image: Image) =
   if not sucess:
     raise newException(Exception, "Failed to save Image: " & image.filePath)
 
-
 proc save*(image: Image, filePath: string) =
   ## Sets image path and save the image.
   image.filePath = filePath
   image.save()
 
-
 proc inside*(image: Image, x, y: int): bool {.inline.} =
   ## Returns true if (x, y) is inside the image.
   x >= 0 and x < image.width and y >= 0 and y < image.height
-
 
 proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
   ## Gets a color from (x, y) coordinates.
@@ -184,17 +166,14 @@ proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
   else:
     quit("not supported " & $image)
 
-
 proc getRgba*(image: Image, x, y: float64): ColorRGBA {.inline.} =
   ## Gets a pixel as (x, y) floats.
   getRgba(image, int x, int y)
-
 
 proc getRgbaSafe*(image: Image, x, y: int): ColorRGBA {.inline.} =
   ## Gets a pixel as (x, y) but returns transparency if next sampled outside.
   if image.inside(x, y):
     return image.getRgba(x, y)
-
 
 proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
   ## Puts a ColorRGBA pixel back.
@@ -210,17 +189,14 @@ proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
   else:
     quit("not supported")
 
-
 proc putRgba*(image: Image, x, y: float64, rgba: ColorRGBA) {.inline.} =
   ## Puts a ColorRGBA pixel back as x, y floats (does not do blending).
   putRgba(image, int x, int y, rgba)
-
 
 proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
   ## Puts pixel onto the image or safely ignores this command if pixel is outside the image.
   if image.inside(x, y):
     image.putRgba(x, y, rgba)
-
 
 proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
   ## Blits rectangle from one image to the other image.
@@ -229,7 +205,6 @@ proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
       var rgba = srcImage.getRgba(x, y)
       destImage.putRgbaSafe(int(pos.x) + x, int(pos.y) + y, rgba)
 
-
 proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
   ## Blits rectangle from one image to the other image.
   assert src.w == dest.w and src.h == dest.h
@@ -237,7 +212,6 @@ proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
     for y in 0..<int(src.h):
       var rgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
       destImage.putRgbaSafe(int(dest.x) + x, int(dest.y) + y, rgba)
-
 
 proc blitWithMask*(
     destImage: Image,
@@ -294,11 +268,9 @@ proc computeBounds(
     yEnd = min(int max(boundsY), destImage.height)
   return (xStart, yStart, xEnd, yEnd)
 
-
 proc roundPixelVec(v: Vec3): Vec2 {.inline.} =
   ## Rounds vector to pixel center.
   vec2(round(v.x), round(v.y))
-
 
 proc blit*(destImage: Image, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending.
@@ -313,7 +285,6 @@ proc blit*(destImage: Image, srcImage: Image, mat: Mat4) =
       if srcImage.inside(int srcV.x, int srcV.y):
         var rgba = srcImage.getRgba(int srcV.x, int srcV.y)
         destImage.putRgba(x, y, rgba)
-
 
 proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending.
@@ -342,7 +313,6 @@ proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
           rgba.a = 255
           destImage.putRgba(x, y, rgba)
 
-
 proc blitWithMask*(
     destImage: Image,
     srcImage: Image,
@@ -366,7 +336,6 @@ proc blitWithMask*(
         let rgba = srcImage.getRgba(srcV.x, srcV.y)
         if rgba.a > uint8 0:
           destImage.putRgba(x, y, rgba)
-
 
 proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
   ## Draws a line from one at vec to to vec.
@@ -402,7 +371,6 @@ proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
       if y < to.y:
         break
 
-
 proc fillRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
   ## Draws a filled rectangle.
   let
@@ -414,7 +382,6 @@ proc fillRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
     for y in miny ..< maxy:
       image.putRgba(x, y, rgba)
 
-
 proc strokeRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
   ## Draws a rectangle borders only.
   let
@@ -424,7 +391,6 @@ proc strokeRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
   image.line(at + vec2(wh.x, 0), at + vec2(wh.x, wh.y), rgba)
   image.line(at + vec2(0, wh.y), at + vec2(wh.x, wh.y), rgba)
   image.line(at + vec2(0, wh.y), at, rgba)
-
 
 proc fillCirle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
   ## Draws a filled circle with antialiased edges.
@@ -451,7 +417,6 @@ proc fillCirle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
         var rgbaAA = rgba
         rgbaAA.a = uint8(float(touch) * 255.0 / (n * n))
         image.putRgba(x, y, rgbaAA)
-
 
 proc strokeCirle*(
     image: Image,
@@ -485,7 +450,6 @@ proc strokeCirle*(
         rgbaAA.a = uint8(float(touch) * 255.0 / (n * n))
         image.putRgba(x, y, rgbaAA)
 
-
 proc ninePatch*(
     image: Image,
     rect: Rect,
@@ -497,7 +461,6 @@ proc ninePatch*(
   ## Draws a 9-patch
   image.fillRect(rect, fill)
   image.strokeRect(rect, stroke)
-
 
 proc minifyBy2*(image: Image): Image =
   ## Scales the image down by an integer scale.
@@ -511,13 +474,11 @@ proc minifyBy2*(image: Image): Image =
         image.getRgba(x * 2 + 0, y * 2 + 1).color / 4.0
       result.putRgba(x, y, color.rgba)
 
-
 proc minify*(image: Image, scale: int): Image =
   ## Scales the image down by an integer scale.
   result = image
   for i in 1..<scale:
     result = result.minifyBy2()
-
 
 proc magnify*(image: Image, scale: int): Image =
   ## Scales image image up by an integer scale.
@@ -532,7 +493,6 @@ proc magnify*(image: Image, scale: int): Image =
       var rgba =
         image.getRgba(x div scale, y div scale)
       result.putRgba(x, y, rgba)
-
 
 proc fill*(image: Image, rgba: ColorRgba) =
   ## Fills the image with a solid color.
@@ -559,7 +519,6 @@ proc fill*(image: Image, rgba: ColorRgba) =
   else:
     raise newException(Exception, "File format not supported")
 
-
 proc flipHorizontal*(image: Image): Image =
   ## Flips the image around the Y axis.
   result = newImage(image.width, image.height, image.channels)
@@ -569,7 +528,6 @@ proc flipHorizontal*(image: Image): Image =
       #echo image.width - x
       result.putRgba(image.width - x - 1, y, rgba)
 
-
 proc flipVertical*(image: Image): Image =
   ## Flips the image around the X axis.
   result = newImage(image.width, image.height, image.channels)
@@ -578,14 +536,12 @@ proc flipVertical*(image: Image): Image =
       var rgba = image.getRgba(x, y)
       result.putRgba(x, image.height - y - 1, rgba)
 
-
 proc getSubImage*(image: Image, x, y, w, h: int): Image =
   ## Gets a sub image of the main image.
   result = newImage(w, h, image.channels)
   for x2 in 0..<w:
     for y2 in 0..<h:
       result.putRgba(x2, y2, image.getRgba(x2 + x, y2 + y))
-
 
 proc rotate90Degrees*(image: Image): Image =
   ## Rotates the image clockwise.
@@ -595,7 +551,6 @@ proc rotate90Degrees*(image: Image): Image =
       var rgba = image.getRgba(x, y)
       result.putRgba(image.height - y - 1, x, rgba)
 
-
 proc rotateNeg90Degrees*(image: Image): Image =
   ## Rotates the image anti-clockwise.
   result = newImage(image.height, image.width, image.channels)
@@ -603,7 +558,6 @@ proc rotateNeg90Degrees*(image: Image): Image =
     for x in 0 ..< image.width:
       var rgba = image.getRgba(x, y)
       result.putRgba(y, image.width - x - 1, rgba)
-
 
 proc shearX*(image: Image, shear: float): Image =
   ## Shears the image horizontally; resizes to fit.
@@ -633,7 +587,6 @@ proc shearX*(image: Image, shear: float): Image =
     sheared.putRgba(offsetAdd + iSkew + 1, y, rgba(0, 0, 0, 0))
   return sheared
 
-
 proc shearY*(image: Image, shear: float): Image =
   ## Shears the image vertically; resizes to fit.
   let
@@ -661,7 +614,6 @@ proc shearY*(image: Image, shear: float): Image =
       oLeft = pixelLeft
     sheared.putRgba(x, offsetAdd + iSkew + 1, rgba(0, 0, 0, 0))
   return sheared
-
 
 proc rotate*(image: Image, angle: float): Image =
   ## Rotates the image by given angle (in degrees)
@@ -697,7 +649,6 @@ proc rotate*(image: Image, angle: float): Image =
     newHeight
   )
 
-
 proc removeAlpha*(image: Image) =
   ## Removes alpha channel from the images by:
   ## Setting it to 255 everywhere.
@@ -706,7 +657,6 @@ proc removeAlpha*(image: Image) =
       var rgba = image.getRgba(x, y)
       rgba.a = 255
       image.putRgba(x, y, rgba)
-
 
 proc alphaBleed*(image: Image) =
   ## PNG saves space by encoding alpha = 0 areas as black however
@@ -765,7 +715,6 @@ proc alphaBleed*(image: Image) =
         rgba.a = 0
       image.putRgba(x, y, rgba)
 
-
 proc fillRoundedRect*(
     image: Image,
     rect: Rect,
@@ -785,7 +734,6 @@ proc fillRoundedRect*(
   image.blit(corner, vec2(rect.w - borderWidth, rect.h - borderWidth)) # SE
   corner = corner.flipHorizontal()
   image.blit(corner, vec2(0, rect.h - borderWidth)) # SW
-
 
 proc strokeRoundedRect*(
     image: Image,
@@ -816,12 +764,10 @@ proc strokeRoundedRect*(
   corner = corner.flipHorizontal()
   image.blit(corner, vec2(0, rect.h - borderWidth)) # SW
 
-
 proc copy*(image: Image): Image =
   ## Copies an image creating a new image.
   result = newImage(image.width, image.height, image.channels)
   result.data = image.data
-
 
 proc blur*(
     image: Image,

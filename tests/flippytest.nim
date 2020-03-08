@@ -1,7 +1,5 @@
 import flippy, chroma, vmath
 
-
-
 block:
   echo "# Test Blur"
   let image = newImage(100, 100, 4)
@@ -73,7 +71,6 @@ block:
 
   main.save("composed.png")
 
-
 block:
   echo "# Flip tests"
   var lenna = loadImage("lenna.png")
@@ -98,7 +95,6 @@ block:
   var image10x = image.magnify(10)
   image10x.save("fillCirle.png")
 
-
 block:
   echo "# Test strokeCirle"
   let image = newImage(20, 20, 4)
@@ -107,7 +103,6 @@ block:
   var image10x = image.magnify(10)
   image10x.save("strokeCirle.png")
 
-
 block:
   echo "# Test fillRoundedRect"
   let image = newImage(100, 100, 4)
@@ -115,14 +110,12 @@ block:
     radius = 8, rgba = rgba(255, 0, 0, 255))
   image.save("fillRoundedRect.png")
 
-
 block:
   echo "# Test strokeRoundedRect"
   let image = newImage(100, 100, 4)
   image.strokeRoundedRect(rect = rect(0, 0, 100, 100),
     radius = 8, border = 4, rgba = rgba(255, 255, 255, 255))
   image.save("strokeRoundedRect.png")
-
 
 block:
   echo "# Test ninePatch"
