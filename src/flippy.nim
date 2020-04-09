@@ -91,22 +91,22 @@ proc newImage*(filePath: string, width, height, channels: int): Image =
 
 proc loadImage*(filePath: string): Image =
   ## Loads a png image.
-  var image = Image()
-  image.filePath = filePath
+  result = Image()
+  result.filePath = filePath
   when defined(useStb):
-    image.data = stbi.load(
-      image.filePath,
-      image.width,
-      image.height,
-      image.channels,
-      stbi.Default)
+    result.data = loadFromMemory(
+      cast[seq[byte]](readFile(filePath)),
+      result.width,
+      result.height,
+      result.channels,
+      stbi.Default
+    )
   else:
     let png = loadPNG32(filePath)
-    image.width = png.width
-    image.height = png.height
-    image.channels = 4
-    image.data = cast[seq[uint8]](png.data)
-  return image
+    result.width = png.width
+    result.height = png.height
+    result.channels = 4
+    result.data = cast[seq[uint8]](png.data)
 
 proc save*(image: Image) =
   ## Saves a png image.
