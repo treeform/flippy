@@ -130,6 +130,12 @@ block:
   image.save("lenna.rotate45Degrees.png")
 
 block:
+  echo "# Test rotate 2 degrees"
+  var image = loadImage("lenna.png")
+  image = image.rotate(2)
+  image.save("lenna.rotate2Degrees.png")
+
+block:
   echo "# Test shearX"
   var image = loadImage("lenna.png")
   image = image.shearX(0.25)

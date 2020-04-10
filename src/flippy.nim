@@ -616,11 +616,28 @@ proc shearY*(image: Image, shear: float): Image =
     sheared.putRgba(x, offsetAdd + iSkew + 1, rgba(0, 0, 0, 0))
   return sheared
 
+proc trim(image: Image): Image =
+  ## Trims the transparent (alpha=0) border around the image.
+  var
+    minX = image.width
+    maxX = 0
+    minY = image.height
+    maxY = 0
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
+      var rgba = image.getRgba(x, y)
+      if rgba.a != 0:
+        minX = min(x, minX)
+        maxX = max(x, maxX)
+        minY = min(y, minY)
+        maxY = max(y, maxY)
+  image.getSubImage(minX, minY, maxX - minX, maxY - minY)
+
 proc rotate*(image: Image, angle: float): Image =
   ## Rotates the image by given angle (in degrees)
   ## using the 3-shear method (Paeth method)
   # Handle easy cases and avoid precision errors
-  result = image
+  var image = image
   var
     angle = angle mod 360
     rotations = 0
@@ -630,25 +647,20 @@ proc rotate*(image: Image, angle: float): Image =
     angle = angle - 90
     rotations += 1
   rotations = rotations mod 4
-  for _ in 1..rotations: result = result.rotate90Degrees()
-  if angle == 0.0: return result
+  for _ in 1..rotations: image = image.rotate90Degrees()
+  if angle == 0.0: return image
   let
     radians = degToRad(angle)
     alpha = -tan(radians / 2)
     beta = sin(radians)
-  if alpha == 0.0 and beta == 0.0: return result
+  if alpha == 0.0 and beta == 0.0: return image
   let
-    newWidth = int(trunc(abs(float(result.width) * sin(radians)) +
-                   abs(float(result.height) * cos(radians))))
-    newHeight = int(trunc(abs(float(result.width) * cos(radians)) +
-                    abs(float(result.height) * sin(radians))))
-  result = result.shearX(alpha).shearY(beta).shearX(alpha)
-  return result.getSubImage(
-    1+int((result.width - newWidth)/2),
-    1+int((result.height - newHeight)/2),
-    newWidth,
-    newHeight
-  )
+    newWidth = int(trunc(abs(float(image.width) * sin(radians)) +
+                   abs(float(image.height) * cos(radians))))
+    newHeight = int(trunc(abs(float(image.width) * cos(radians)) +
+                    abs(float(image.height) * sin(radians))))
+  image = image.shearX(alpha).shearY(beta).shearX(alpha)
+  image.trim()
 
 proc removeAlpha*(image: Image) =
   ## Removes alpha channel from the images by:
