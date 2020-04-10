@@ -32,6 +32,7 @@ image.save("tests/lenna2.png")
 
 ```nim
 import flippy
+
 ```
 
 ## **type** Image
@@ -40,12 +41,13 @@ Main image object that holds the bitmap data.
 
 ```nim
 Image = ref object
- filePath*: string
- width*: int
- height*: int
- channels*: int
- format*: int
- data*: seq[uint8]
+  filePath*: string
+  width*: int
+  height*: int
+  channels*: int
+  format*: int
+  data*: seq[uint8]
+
 ```
 
 ## **proc** `$`
@@ -53,7 +55,7 @@ Image = ref object
 Display the image path, size and channels.
 
 ```nim
-proc `$`(image: Image): string
+proc `$`(image: Image): string {.raises: [], tags: [].}
 ```
 
 ## **proc** newImage
@@ -61,7 +63,7 @@ proc `$`(image: Image): string
 Creates a new image with appropriate dimensions.
 
 ```nim
-proc newImage(width, height, channels: int): Image
+proc newImage(width, height, channels: int): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** newImage
@@ -69,7 +71,8 @@ proc newImage(width, height, channels: int): Image
 Creates a new image with a path.
 
 ```nim
-proc newImage(filePath: string; width, height, channels: int): Image
+proc newImage(filePath: string; width, height, channels: int): Image {.raises: [],
+    tags: [].}
 ```
 
 ## **proc** loadImage
@@ -77,7 +80,8 @@ proc newImage(filePath: string; width, height, channels: int): Image
 Loads a png image.
 
 ```nim
-proc loadImage(filePath: string): Image {tags: [ReadIOEffect, RootEffect, WriteIOEffect].}
+proc loadImage(filePath: string): Image {.raises: [], tags: [ReadIOEffect, RootEffect,
+    WriteIOEffect].}
 ```
 
 ## **proc** save
@@ -93,7 +97,8 @@ proc save(image: Image) {.raises: [Exception], tags: [RootEffect, WriteIOEffect]
 Sets image path and save the image.
 
 ```nim
-proc save(image: Image; filePath: string) {.raises: [Exception], tags: [RootEffect, WriteIOEffect].}
+proc save(image: Image; filePath: string) {.raises: [Exception],
+                                       tags: [RootEffect, WriteIOEffect].}
 ```
 
 ## **proc** inside
@@ -101,7 +106,7 @@ proc save(image: Image; filePath: string) {.raises: [Exception], tags: [RootEffe
 Returns true if (x, y) is inside the image.
 
 ```nim
-proc inside(image: Image; x, y: int): bool {.inline.}
+proc inside(image: Image; x, y: int): bool {.inline, raises: [], tags: [].}
 ```
 
 ## **proc** getRgba
@@ -109,7 +114,7 @@ proc inside(image: Image; x, y: int): bool {.inline.}
 Gets a color from (x, y) coordinates.
 
 ```nim
-proc getRgba(image: Image; x, y: int): ColorRGBA {.inline.}
+proc getRgba(image: Image; x, y: int): ColorRGBA {.inline, raises: [], tags: [].}
 ```
 
 ## **proc** getRgba
@@ -117,7 +122,7 @@ proc getRgba(image: Image; x, y: int): ColorRGBA {.inline.}
 Gets a pixel as (x, y) floats.
 
 ```nim
-proc getRgba(image: Image; x, y: float64): ColorRGBA {.inline.}
+proc getRgba(image: Image; x, y: float64): ColorRGBA {.inline, raises: [], tags: [].}
 ```
 
 ## **proc** getRgbaSafe
@@ -125,7 +130,7 @@ proc getRgba(image: Image; x, y: float64): ColorRGBA {.inline.}
 Gets a pixel as (x, y) but returns transparency if next sampled outside.
 
 ```nim
-proc getRgbaSafe(image: Image; x, y: int): ColorRGBA {.inline.}
+proc getRgbaSafe(image: Image; x, y: int): ColorRGBA {.inline, raises: [], tags: [].}
 ```
 
 ## **proc** putRgba
@@ -133,7 +138,7 @@ proc getRgbaSafe(image: Image; x, y: int): ColorRGBA {.inline.}
 Puts a ColorRGBA pixel back.
 
 ```nim
-proc putRgba(image: Image; x, y: int; rgba: ColorRGBA) {.inline.}
+proc putRgba(image: Image; x, y: int; rgba: ColorRGBA) {.inline, raises: [], tags: [].}
 ```
 
 ## **proc** putRgba
@@ -141,7 +146,7 @@ proc putRgba(image: Image; x, y: int; rgba: ColorRGBA) {.inline.}
 Puts a ColorRGBA pixel back as x, y floats (does not do blending).
 
 ```nim
-proc putRgba(image: Image; x, y: float64; rgba: ColorRGBA) {.inline.}
+proc putRgba(image: Image; x, y: float64; rgba: ColorRGBA) {.inline, raises: [], tags: [].}
 ```
 
 ## **proc** putRgbaSafe
@@ -149,7 +154,7 @@ proc putRgba(image: Image; x, y: float64; rgba: ColorRGBA) {.inline.}
 Puts pixel onto the image or safely ignores this command if pixel is outside the image.
 
 ```nim
-proc putRgbaSafe(image: Image; x, y: int; rgba: ColorRGBA) {.inline.}
+proc putRgbaSafe(image: Image; x, y: int; rgba: ColorRGBA) {.inline, raises: [], tags: [].}
 ```
 
 ## **proc** blit
@@ -157,7 +162,7 @@ proc putRgbaSafe(image: Image; x, y: int; rgba: ColorRGBA) {.inline.}
 Blits rectangle from one image to the other image.
 
 ```nim
-proc blit(destImage: Image; srcImage: Image; pos: Vec2)
+proc blit(destImage: Image; srcImage: Image; pos: Vec2) {.raises: [], tags: [].}
 ```
 
 ## **proc** blit
@@ -165,7 +170,7 @@ proc blit(destImage: Image; srcImage: Image; pos: Vec2)
 Blits rectangle from one image to the other image.
 
 ```nim
-proc blit(destImage: Image; srcImage: Image; src, dest: Rect)
+proc blit(destImage: Image; srcImage: Image; src, dest: Rect) {.raises: [], tags: [].}
 ```
 
 ## **proc** blitWithMask
@@ -173,7 +178,8 @@ proc blit(destImage: Image; srcImage: Image; src, dest: Rect)
 Blits rectangle from one image to the other image with masking color.
 
 ```nim
-proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; rgba: ColorRGBA)
+proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; rgba: ColorRGBA) {.
+    raises: [], tags: [].}
 ```
 
 ## **proc** blit
@@ -181,7 +187,7 @@ proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; rgba: Colo
 Blits one image onto another using matrix with alpha blending.
 
 ```nim
-proc blit(destImage: Image; srcImage: Image; mat: Mat4)
+proc blit(destImage: Image; srcImage: Image; mat: Mat4) {.raises: [], tags: [].}
 ```
 
 ## **proc** blitWithAlpha
@@ -189,7 +195,7 @@ proc blit(destImage: Image; srcImage: Image; mat: Mat4)
 Blits one image onto another using matrix with alpha blending.
 
 ```nim
-proc blitWithAlpha(destImage: Image; srcImage: Image; mat: Mat4)
+proc blitWithAlpha(destImage: Image; srcImage: Image; mat: Mat4) {.raises: [], tags: [].}
 ```
 
 ## **proc** blitWithMask
@@ -197,7 +203,8 @@ proc blitWithAlpha(destImage: Image; srcImage: Image; mat: Mat4)
 Blits one image onto another using matrix with masking color.
 
 ```nim
-proc blitWithMask(destImage: Image; srcImage: Image; mat: Mat4; rgba: ColorRGBA)
+proc blitWithMask(destImage: Image; srcImage: Image; mat: Mat4; rgba: ColorRGBA) {.
+    raises: [], tags: [].}
 ```
 
 ## **proc** line
@@ -205,7 +212,7 @@ proc blitWithMask(destImage: Image; srcImage: Image; mat: Mat4; rgba: ColorRGBA)
 Draws a line from one at vec to to vec.
 
 ```nim
-proc line(image: Image; at, to: Vec2; rgba: ColorRGBA)
+proc line(image: Image; at, to: Vec2; rgba: ColorRGBA) {.raises: [], tags: [].}
 ```
 
 ## **proc** fillRect
@@ -213,7 +220,7 @@ proc line(image: Image; at, to: Vec2; rgba: ColorRGBA)
 Draws a filled rectangle.
 
 ```nim
-proc fillRect(image: Image; rect: Rect; rgba: ColorRGBA)
+proc fillRect(image: Image; rect: Rect; rgba: ColorRGBA) {.raises: [], tags: [].}
 ```
 
 ## **proc** strokeRect
@@ -221,7 +228,7 @@ proc fillRect(image: Image; rect: Rect; rgba: ColorRGBA)
 Draws a rectangle borders only.
 
 ```nim
-proc strokeRect(image: Image; rect: Rect; rgba: ColorRGBA)
+proc strokeRect(image: Image; rect: Rect; rgba: ColorRGBA) {.raises: [], tags: [].}
 ```
 
 ## **proc** fillCirle
@@ -229,7 +236,8 @@ proc strokeRect(image: Image; rect: Rect; rgba: ColorRGBA)
 Draws a filled circle with antialiased edges.
 
 ```nim
-proc fillCirle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA)
+proc fillCirle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA) {.raises: [],
+    tags: [].}
 ```
 
 ## **proc** strokeCirle
@@ -237,7 +245,8 @@ proc fillCirle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA)
 Draws a border of circle with antialiased edges.
 
 ```nim
-proc strokeCirle(image: Image; pos: Vec2; radius: float; border: float; rgba: ColorRGBA)
+proc strokeCirle(image: Image; pos: Vec2; radius: float; border: float; rgba: ColorRGBA) {.
+    raises: [], tags: [].}
 ```
 
 ## **proc** ninePatch
@@ -245,7 +254,8 @@ proc strokeCirle(image: Image; pos: Vec2; radius: float; border: float; rgba: Co
 Draws a 9-patch
 
 ```nim
-proc ninePatch(image: Image; rect: Rect; radius, border: float; fill, stroke: ColorRGBA)
+proc ninePatch(image: Image; rect: Rect; radius, border: float; fill, stroke: ColorRGBA) {.
+    raises: [], tags: [].}
 ```
 
 ## **proc** minifyBy2
@@ -253,7 +263,7 @@ proc ninePatch(image: Image; rect: Rect; radius, border: float; fill, stroke: Co
 Scales the image down by an integer scale.
 
 ```nim
-proc minifyBy2(image: Image): Image
+proc minifyBy2(image: Image): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** minify
@@ -261,7 +271,7 @@ proc minifyBy2(image: Image): Image
 Scales the image down by an integer scale.
 
 ```nim
-proc minify(image: Image; scale: int): Image
+proc minify(image: Image; scale: int): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** magnify
@@ -269,7 +279,7 @@ proc minify(image: Image; scale: int): Image
 Scales image image up by an integer scale.
 
 ```nim
-proc magnify(image: Image; scale: int): Image
+proc magnify(image: Image; scale: int): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** fill
@@ -277,7 +287,7 @@ proc magnify(image: Image; scale: int): Image
 Fills the image with a solid color.
 
 ```nim
-proc fill(image: Image; rgba: ColorRGBA) {.raises: [Exception].}
+proc fill(image: Image; rgba: ColorRGBA) {.raises: [Exception], tags: [].}
 ```
 
 ## **proc** flipHorizontal
@@ -285,7 +295,7 @@ proc fill(image: Image; rgba: ColorRGBA) {.raises: [Exception].}
 Flips the image around the Y axis.
 
 ```nim
-proc flipHorizontal(image: Image): Image
+proc flipHorizontal(image: Image): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** flipVertical
@@ -293,7 +303,7 @@ proc flipHorizontal(image: Image): Image
 Flips the image around the X axis.
 
 ```nim
-proc flipVertical(image: Image): Image
+proc flipVertical(image: Image): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** getSubImage
@@ -301,7 +311,7 @@ proc flipVertical(image: Image): Image
 Gets a sub image of the main image.
 
 ```nim
-proc getSubImage(image: Image; x, y, w, h: int): Image
+proc getSubImage(image: Image; x, y, w, h: int): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** rotate90Degrees
@@ -309,7 +319,7 @@ proc getSubImage(image: Image; x, y, w, h: int): Image
 Rotates the image clockwise.
 
 ```nim
-proc rotate90Degrees(image: Image): Image
+proc rotate90Degrees(image: Image): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** rotateNeg90Degrees
@@ -317,7 +327,7 @@ proc rotate90Degrees(image: Image): Image
 Rotates the image anti-clockwise.
 
 ```nim
-proc rotateNeg90Degrees(image: Image): Image
+proc rotateNeg90Degrees(image: Image): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** shearX
@@ -325,7 +335,7 @@ proc rotateNeg90Degrees(image: Image): Image
 Shears the image horizontally; resizes to fit.
 
 ```nim
-proc shearX(image: Image; shear: float): Image
+proc shearX(image: Image; shear: float): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** shearY
@@ -333,7 +343,7 @@ proc shearX(image: Image; shear: float): Image
 Shears the image vertically; resizes to fit.
 
 ```nim
-proc shearY(image: Image; shear: float): Image
+proc shearY(image: Image; shear: float): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** rotate
@@ -341,7 +351,7 @@ proc shearY(image: Image; shear: float): Image
 Rotates the image by given angle (in degrees) using the 3-shear method (Paeth method)
 
 ```nim
-proc rotate(image: Image; angle: float): Image
+proc rotate(image: Image; angle: float): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** removeAlpha
@@ -349,7 +359,7 @@ proc rotate(image: Image; angle: float): Image
 Removes alpha channel from the images by: Setting it to 255 everywhere.
 
 ```nim
-proc removeAlpha(image: Image)
+proc removeAlpha(image: Image) {.raises: [], tags: [].}
 ```
 
 ## **proc** alphaBleed
@@ -357,7 +367,7 @@ proc removeAlpha(image: Image)
 PNG saves space by encoding alpha = 0 areas as black however scaling such images lets the black or gray come out. This bleeds the real colors into invisible space.
 
 ```nim
-proc alphaBleed(image: Image)
+proc alphaBleed(image: Image) {.raises: [], tags: [].}
 ```
 
 ## **proc** fillRoundedRect
@@ -365,7 +375,8 @@ proc alphaBleed(image: Image)
 Fills image with a rounded rectangle.
 
 ```nim
-proc fillRoundedRect(image: Image; rect: Rect; radius: float; rgba: ColorRGBA) {.raises: [Exception].}
+proc fillRoundedRect(image: Image; rect: Rect; radius: float; rgba: ColorRGBA) {.
+    raises: [Exception], tags: [].}
 ```
 
 ## **proc** strokeRoundedRect
@@ -373,7 +384,8 @@ proc fillRoundedRect(image: Image; rect: Rect; radius: float; rgba: ColorRGBA) {
 Fills image with a stroked rounded rectangle.
 
 ```nim
-proc strokeRoundedRect(image: Image; rect: Rect; radius, border: float; rgba: ColorRGBA)
+proc strokeRoundedRect(image: Image; rect: Rect; radius, border: float; rgba: ColorRGBA) {.
+    raises: [], tags: [].}
 ```
 
 ## **proc** copy
@@ -381,7 +393,7 @@ proc strokeRoundedRect(image: Image; rect: Rect; radius, border: float; rgba: Co
 Copies an image creating a new image.
 
 ```nim
-proc copy(image: Image): Image
+proc copy(image: Image): Image {.raises: [], tags: [].}
 ```
 
 ## **proc** blur
@@ -389,5 +401,6 @@ proc copy(image: Image): Image
 Blurs the image by x and y directions.
 
 ```nim
-proc blur(image: Image; xBlur: int; yBlur: int): Image
+proc blur(image: Image; xBlur: int; yBlur: int): Image {.raises: [], tags: [].}
 ```
+
