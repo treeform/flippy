@@ -682,7 +682,12 @@ proc rotate*(image: Image, angle: float): Image =
     beta = sin(radians)
   if alpha == 0.0 and beta == 0.0:
     return
-  result = result.shearX(alpha).shearY(beta).shearX(alpha).trim()
+  let
+    newWidth = int(trunc(abs(float(image.width) * sin(radians)) +
+                   abs(float(image.height) * cos(radians))))
+    newHeight = int(trunc(abs(float(image.width) * cos(radians)) +
+                    abs(float(image.height) * sin(radians))))
+  result = image.shearX(alpha).shearY(beta).shearX(alpha).trim()
 
 proc removeAlpha*(image: Image) =
   ## Removes alpha channel from the images by:
