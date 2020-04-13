@@ -64,7 +64,8 @@ proc `/`[T: ColorRGBA | Color](color: T; v: float): T =
 proc `$`*(image: Image): string =
   ## Display the image path, size and channels.
   if image.filePath.len > 0:
-    result = &"<Image {image.filePath} {$image.width} x {$image.height} : {$image.channels}>"
+    result = &"<Image {image.filePath} {$image.width} x {$image.height}:" &
+      &"{$image.channels}>"
   else:
     result = &"<Image {$image.width} x {$image.height}: {$image.channels}>"
 
