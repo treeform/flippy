@@ -234,7 +234,7 @@ proc getSubImage*(image: Image, x, y, w, h: int): Image =
     for y2 in 0 ..< h:
       result.putRgba(x2, y2, image.getRgba(x2 + x, y2 + y))
 
-proc trim(image: Image): Image =
+proc trim*(image: Image): Image =
   ## Trims the transparent (alpha=0) border around the image.
   var
     minX = image.width
@@ -683,11 +683,24 @@ proc rotate*(image: Image, angle: float): Image =
   if alpha == 0.0 and beta == 0.0:
     return
   let
-    newWidth = int(trunc(abs(float(image.width) * sin(radians)) +
-                   abs(float(image.height) * cos(radians))))
-    newHeight = int(trunc(abs(float(image.width) * cos(radians)) +
-                    abs(float(image.height) * sin(radians))))
-  result = image.shearX(alpha).shearY(beta).shearX(alpha).trim()
+    newWidth = int(abs(float(image.width) * sin(radians)) +
+                   abs(float(image.height) * cos(radians)))
+    newHeight = int(abs(float(image.width) * cos(radians)) +
+                    abs(float(image.height) * sin(radians)))
+    sheared = image.shearX(alpha).shearY(beta).shearX(alpha)
+    widthOffset = (sheared.width - newWidth) div 2
+    heightOffset = (sheared.height - newHeight) div 2
+
+  result = newImage(
+    image.filePath,
+    newWidth,
+    newHeight,
+    image.channels
+  )
+  for x in 0 ..< result.width:
+    for y in 0 ..< result.height:
+      let rgba = sheared.getRgba(x + widthOffset, y + heightOffset)
+      result.putRgba(x, y, rgba)
 
 proc removeAlpha*(image: Image) =
   ## Removes alpha channel from the images by:

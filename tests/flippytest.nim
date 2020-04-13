@@ -136,6 +136,26 @@ block:
   image.save("lenna.rotate2Degrees.png")
 
 block:
+  echo "# Test rotate 2 degrees with alpha padding"
+  var image = loadImage("lenna.png")
+  let
+    top = rect(0, 0, image.width.float32, 20)
+    bottom = rect(
+      0, (image.height - 20).float32, image.width.float32, image.height.float32
+    )
+    left = rect(0, 0, 20, image.height.float32)
+    right = rect(
+      (image.width - 20).float32, 0, image.width.float32, image.height.float32
+    )
+    transparent = rgba(0, 0, 0, 0)
+  image.fillRect(top, transparent)
+  image.fillRect(bottom, transparent)
+  image.fillRect(left, transparent)
+  image.fillRect(right, transparent)
+  image = image.rotate(2)
+  image.save("lenna.rotate2Degrees.padded.png")
+
+block:
   echo "# Test shearX"
   var image = loadImage("lenna.png")
   image = image.shearX(0.25)
