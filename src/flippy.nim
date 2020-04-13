@@ -692,16 +692,12 @@ proc rotate*(image: Image, angle: float): Image =
     widthOffset = (sheared.width - newWidth) div 2
     heightOffset = (sheared.height - newHeight) div 2
 
-  result = newImage(
-    image.filePath,
+  result = sheared.getSubImage(
+    widthOffset,
+    heightOffset,
     newWidth,
-    newHeight,
-    image.channels
+    newHeight
   )
-  for x in 0 ..< result.width:
-    for y in 0 ..< result.height:
-      let rgba = sheared.getRgba(x + widthOffset, y + heightOffset)
-      result.putRgba(x, y, rgba)
 
 proc removeAlpha*(image: Image) =
   ## Removes alpha channel from the images by:
