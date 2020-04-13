@@ -1,4 +1,4 @@
-import chroma, math, os, vmath
+import chroma, math, os, strformat, vmath
 
 when defined(useStb):
   import stb_image/read as stbi
@@ -9,10 +9,7 @@ else:
 type Image* = ref object
   ## Main image object that holds the bitmap data.
   filePath*: string
-  width*: int
-  height*: int
-  channels*: int
-  format*: int
+  width*, height*, channels*, format*: int
   data*: seq[uint8]
 
 proc `+`[T: ColorRGBA | Color](a, b: T): T =
@@ -67,27 +64,25 @@ proc `/`[T: ColorRGBA | Color](color: T; v: float): T =
 proc `$`*(image: Image): string =
   ## Display the image path, size and channels.
   if image.filePath.len > 0:
-    return "<Image " & image.filePath & " " & $image.width & "x" &
-        $image.height & ":" & $image.channels & ">"
+    result = "<Image " & image.filePath & " " & $image.width & "x" &
+      $image.height & ":" & $image.channels & ">"
   else:
-    return "<Image " & $image.width & "x" & $image.height & ":" &
-        $image.channels & ">"
+    result = "<Image " & $image.width & "x" & $image.height & ":" &
+      $image.channels & ">"
 
 proc newImage*(width, height, channels: int): Image =
   ## Creates a new image with appropriate dimensions.
-  var image = Image()
-  image.width = width
-  image.height = height
-  image.channels = channels
-  assert image.channels > 0 and image.channels <= 4
-  image.data = newSeq[uint8](width * height * channels)
-  return image
+  result = Image()
+  result.width = width
+  result.height = height
+  result.channels = channels
+  assert result.channels > 0 and result.channels <= 4
+  result.data = newSeq[uint8](width * height * channels)
 
 proc newImage*(filePath: string, width, height, channels: int): Image =
   ## Creates a new image with a path.
-  var image = newImage(width, height, channels)
-  image.filePath = filePath
-  return image
+  result = newImage(width, height, channels)
+  result.filePath = filePath
 
 proc loadImage*(filePath: string): Image =
   ## Loads a png image.
@@ -165,7 +160,8 @@ proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
     result.b = image.data[(image.width * y + x) * 4 + 2]
     result.a = image.data[(image.width * y + x) * 4 + 3]
   else:
-    quit("not supported " & $image)
+    raise newException(Exception,
+      &"Unsupported number of channels in {$image}")
 
 proc getRgba*(image: Image, x, y: float64): ColorRGBA {.inline.} =
   ## Gets a pixel as (x, y) floats.
@@ -188,7 +184,8 @@ proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
     image.data[(image.width * y + x) * 4 + 2] = rgba.b
     image.data[(image.width * y + x) * 4 + 3] = rgba.a
   else:
-    quit("not supported")
+    raise newException(Exception,
+      &"Unsupported number of channels in {$image}")
 
 proc putRgba*(image: Image, x, y: float64, rgba: ColorRGBA) {.inline.} =
   ## Puts a ColorRGBA pixel back as x, y floats (does not do blending).
@@ -199,55 +196,49 @@ proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
   if image.inside(x, y):
     image.putRgba(x, y, rgba)
 
-proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
+proc blit*(destImage, srcImage: Image, pos: Vec2) =
   ## Blits rectangle from one image to the other image.
-  for x in 0..<int(srcImage.width):
-    for y in 0..<int(srcImage.height):
-      var rgba = srcImage.getRgba(x, y)
+  for x in 0 ..< srcImage.width:
+    for y in 0 ..< srcImage.height:
+      let rgba = srcImage.getRgba(x, y)
       destImage.putRgbaSafe(int(pos.x) + x, int(pos.y) + y, rgba)
 
-proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
+proc blit*(destImage, srcImage: Image, src, dest: Rect) =
   ## Blits rectangle from one image to the other image.
   assert src.w == dest.w and src.h == dest.h
-  for x in 0..<int(src.w):
-    for y in 0..<int(src.h):
-      var rgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
+  for x in 0 ..< int(src.w):
+    for y in 0 ..< int(src.h):
+      let rgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
       destImage.putRgbaSafe(int(dest.x) + x, int(dest.y) + y, rgba)
 
 proc blitWithMask*(
-    destImage: Image,
-    srcImage: Image,
-    src, dest: Rect,
-    rgba: ColorRGBA
-  ) =
+  destImage, srcImage: Image, src, dest: Rect, rgba: ColorRGBA
+) =
   ## Blits rectangle from one image to the other image with masking color.
   assert src.w == dest.w and src.h == dest.h
-  for x in 0..<int(src.w):
-    for y in 0..<int(src.h):
+  for x in 0 ..< int(src.w):
+    for y in 0 ..< int(src.h):
       let
         xsrc = int(src.x) + x
         ysrc = int(src.y) + y
         xdest = int(dest.x) + x
         ydest = int(dest.y) + y
       if destImage.inside(xdest, ydest) and srcImage.inside(xsrc, ysrc):
-        var srcRgba = srcImage.getRgba(xsrc, ysrc)
+        let srcRgba = srcImage.getRgba(xsrc, ysrc)
         if srcRgba.a == uint8(255):
           destImage.putRgba(xdest, ydest, rgba)
         elif srcRgba.a > uint8(0):
           var destRgba = destImage.getRgba(xdest, ydest)
-          let a = float(srcRgba.a)/255.0
-          destRgba.r = uint8(float(destRgba.r) * (1-a) + float(rgba.r) * a)
-          destRgba.g = uint8(float(destRgba.g) * (1-a) + float(rgba.g) * a)
-          destRgba.b = uint8(float(destRgba.b) * (1-a) + float(rgba.b) * a)
+          let a = float(srcRgba.a) / 255.0
+          destRgba.r = uint8(float(destRgba.r) * (1 - a) + float(rgba.r) * a)
+          destRgba.g = uint8(float(destRgba.g) * (1 - a) + float(rgba.g) * a)
+          destRgba.b = uint8(float(destRgba.b) * (1 - a) + float(rgba.b) * a)
           destRgba.a = 255
           destImage.putRgba(xdest, ydest, destRgba)
 
 proc computeBounds(
-    destImage: Image,
-    srcImage: Image,
-    mat: Mat4,
-    matInv: Mat4
-  ): (int, int, int, int) =
+  destImage, srcImage: Image, mat: Mat4, matInv: Mat4
+): (int, int, int, int) =
   # Computes the bounds.
   let
     bounds = @[
@@ -273,10 +264,11 @@ proc roundPixelVec(v: Vec3): Vec2 {.inline.} =
   ## Rounds vector to pixel center.
   vec2(round(v.x), round(v.y))
 
-proc blit*(destImage: Image, srcImage: Image, mat: Mat4) =
+proc blit*(destImage, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending.
-  let matInv = mat.inverse()
-  let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
+  let
+    matInv = mat.inverse()
+    (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
 
   # fill the bounding rectangle
   for x in xStart..<xEnd:
@@ -287,19 +279,19 @@ proc blit*(destImage: Image, srcImage: Image, mat: Mat4) =
         var rgba = srcImage.getRgba(int srcV.x, int srcV.y)
         destImage.putRgba(x, y, rgba)
 
-proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
+proc blitWithAlpha*(destImage, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending.
-  let matInv = mat.inverse()
-  let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
-
-  # compute movement vectors
-  let start = matInv * vec3(0.5, 0.5, 0)
-  let stepX = matInv * vec3(1.5, 0.5, 0) - start
-  let stepY = matInv * vec3(0.5, 1.5, 0) - start
+  let
+    matInv = mat.inverse()
+    (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
+    # compute movement vectors
+    start = matInv * vec3(0.5, 0.5, 0)
+    stepX = matInv * vec3(1.5, 0.5, 0) - start
+    stepY = matInv * vec3(0.5, 1.5, 0) - start
 
   # fill the bounding rectangle
-  for x in xStart..<xEnd:
-    for y in yStart..<yEnd:
+  for x in xStart ..< xEnd:
+    for y in yStart ..< yEnd:
       let srcV = roundPixelVec(start + stepX * float32(x) + stepY * float32(y))
       if srcImage.inside(int srcV.x, int srcV.y):
         var rgba = srcImage.getRgba(srcV.x, srcV.y)
@@ -307,31 +299,27 @@ proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
           destImage.putRgba(x, y, rgba)
         elif rgba.a > uint8(0):
           let destRgba = destImage.getRgba(x, y)
-          let a = float(rgba.a)/255.0
-          rgba.r = uint8(float(destRgba.r) * (1-a) + float(rgba.r) * a)
-          rgba.g = uint8(float(destRgba.g) * (1-a) + float(rgba.g) * a)
-          rgba.b = uint8(float(destRgba.b) * (1-a) + float(rgba.b) * a)
+          let a = float(rgba.a) / 255.0
+          rgba.r = uint8(float(destRgba.r) * (1 - a) + float(rgba.r) * a)
+          rgba.g = uint8(float(destRgba.g) * (1 - a) + float(rgba.g) * a)
+          rgba.b = uint8(float(destRgba.b) * (1 - a) + float(rgba.b) * a)
           rgba.a = 255
           destImage.putRgba(x, y, rgba)
 
-proc blitWithMask*(
-    destImage: Image,
-    srcImage: Image,
-    mat: Mat4,
-    rgba: ColorRGBA
-  ) =
+proc blitWithMask*(destImage, srcImage: Image, mat: Mat4, rgba: ColorRGBA) =
   ## Blits one image onto another using matrix with masking color.
-  let matInv = mat.inverse()
-  let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
-
-  # compute movement vectors
-  let start = matInv * vec3(0.5, 0.5, 0)
-  let stepX = matInv * vec3(1.5, 0.5, 0) - start
-  let stepY = matInv * vec3(0.5, 1.5, 0) - start
+  let
+    matInv = mat.inverse()
+    (xStart, yStart, xEnd, yEnd) =
+      computeBounds(destImage, srcImage, mat, matInv)
+    # compute movement vectors
+    start = matInv * vec3(0.5, 0.5, 0)
+    stepX = matInv * vec3(1.5, 0.5, 0) - start
+    stepY = matInv * vec3(0.5, 1.5, 0) - start
 
   # fill the bounding rectangle
-  for x in xStart..<xEnd:
-    for y in yStart..<yEnd:
+  for x in xStart ..< xEnd:
+    for y in yStart ..< yEnd:
       let srcV = roundPixelVec(start + stepX * float32(x) + stepY * float32(y))
       if srcImage.inside(int srcV.x, int srcV.y):
         let rgba = srcImage.getRgba(srcV.x, srcV.y)
@@ -340,13 +328,14 @@ proc blitWithMask*(
 
 proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
   ## Draws a line from one at vec to to vec.
-  var dx = to.x - at.x
-  var dy = to.y - at.y
+  let
+    dx = to.x - at.x
+    dy = to.y - at.y
   var x = at.x
   while true:
     if dx == 0:
       break
-    var y = at.y + dy * (x - at.x) / dx
+    let y = at.y + dy * (x - at.x) / dx
     image.putRgbaSafe(int x, int y, rgba)
     if at.x < to.x:
       x += 1
@@ -361,7 +350,7 @@ proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
   while true:
     if dy == 0:
       break
-    var x = at.x + dx * (y - at.y) / dy
+    let x = at.x + dx * (y - at.y) / dy
     image.putRgbaSafe(int x, int y, rgba)
     if at.y < to.y:
       y += 1
@@ -420,12 +409,8 @@ proc fillCirle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
         image.putRgba(x, y, rgbaAA)
 
 proc strokeCirle*(
-    image: Image,
-    pos: Vec2,
-    radius: float,
-    border: float,
-    rgba: ColorRGBA
-  ) =
+  image: Image, pos: Vec2, radius, border: float, rgba: ColorRGBA
+) =
   ## Draws a border of circle with antialiased edges.
   let
     minx = max(int(pos.x - radius - border), 0)
@@ -437,11 +422,12 @@ proc strokeCirle*(
       let
         pixelPos = vec2(float x, float y) + vec2(0.5, 0.5)
         pixelDist = pixelPos.dist(pos)
-      if pixelDist > radius - border/2 - sqrt(0.5) and
-          pixelDist < radius + border/2 + sqrt(0.5):
+      if pixelDist > radius - border / 2 - sqrt(0.5) and
+          pixelDist < radius + border / 2 + sqrt(0.5):
         var touch = 0
-        const n = 5
-        const r = (n - 1) div 2
+        const
+          n = 5
+          r = (n - 1) div 2
         for aay in -r .. r:
           for aax in -r .. r:
             let dist = pos.dist(pixelPos + vec2(aay / n, aax / n))
@@ -452,13 +438,8 @@ proc strokeCirle*(
         image.putRgba(x, y, rgbaAA)
 
 proc ninePatch*(
-    image: Image,
-    rect: Rect,
-    radius,
-    border: float,
-    fill,
-    stroke: ColorRGBA
-  ) =
+  image: Image, rect: Rect, radius, border: float, fill, stroke: ColorRGBA
+) =
   ## Draws a 9-patch
   image.fillRect(rect, fill)
   image.strokeRect(rect, stroke)
@@ -466,8 +447,8 @@ proc ninePatch*(
 proc minifyBy2*(image: Image): Image =
   ## Scales the image down by an integer scale.
   result = newImage(image.width div 2, image.height div 2, image.channels)
-  for x in 0..<result.width:
-    for y in 0..<result.height:
+  for x in 0 ..< result.width:
+    for y in 0 ..< result.height:
       var color =
         image.getRgba(x * 2 + 0, y * 2 + 0).color / 4.0 +
         image.getRgba(x * 2 + 1, y * 2 + 0).color / 4.0 +
@@ -478,7 +459,7 @@ proc minifyBy2*(image: Image): Image =
 proc minify*(image: Image, scale: int): Image =
   ## Scales the image down by an integer scale.
   result = image
-  for i in 1..<scale:
+  for i in 1 ..< scale:
     result = result.minifyBy2()
 
 proc magnify*(image: Image, scale: int): Image =
@@ -489,10 +470,9 @@ proc magnify*(image: Image, scale: int): Image =
     image.height * scale,
     image.channels
   )
-  for x in 0..<result.width:
-    for y in 0..<result.height:
-      var rgba =
-        image.getRgba(x div scale, y div scale)
+  for x in 0 ..< result.width:
+    for y in 0 ..< result.height:
+      let rgba = image.getRgba(x div scale, y div scale)
       result.putRgba(x, y, rgba)
 
 proc fill*(image: Image, rgba: ColorRgba) =
@@ -525,7 +505,7 @@ proc flipHorizontal*(image: Image): Image =
   result = newImage(image.width, image.height, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
-      var rgba = image.getRgba(x, y)
+      let rgba = image.getRgba(x, y)
       #echo image.width - x
       result.putRgba(image.width - x - 1, y, rgba)
 
@@ -534,14 +514,14 @@ proc flipVertical*(image: Image): Image =
   result = newImage(image.width, image.height, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
-      var rgba = image.getRgba(x, y)
+      let rgba = image.getRgba(x, y)
       result.putRgba(x, image.height - y - 1, rgba)
 
 proc getSubImage*(image: Image, x, y, w, h: int): Image =
   ## Gets a sub image of the main image.
   result = newImage(w, h, image.channels)
-  for x2 in 0..<w:
-    for y2 in 0..<h:
+  for x2 in 0 ..< w:
+    for y2 in 0 ..< h:
       result.putRgba(x2, y2, image.getRgba(x2 + x, y2 + y))
 
 proc rotate90Degrees*(image: Image): Image =
@@ -549,7 +529,7 @@ proc rotate90Degrees*(image: Image): Image =
   result = newImage(image.height, image.width, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
-      var rgba = image.getRgba(x, y)
+      let rgba = image.getRgba(x, y)
       result.putRgba(image.height - y - 1, x, rgba)
 
 proc rotateNeg90Degrees*(image: Image): Image =
@@ -557,7 +537,7 @@ proc rotateNeg90Degrees*(image: Image): Image =
   result = newImage(image.height, image.width, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
-      var rgba = image.getRgba(x, y)
+      let rgba = image.getRgba(x, y)
       result.putRgba(y, image.width - x - 1, rgba)
 
 proc shearX*(image: Image, shear: float): Image =
@@ -647,18 +627,16 @@ proc rotate*(image: Image, angle: float): Image =
     angle = angle - 90
     rotations += 1
   rotations = rotations mod 4
-  for _ in 1..rotations: image = image.rotate90Degrees()
-  if angle == 0.0: return image
+  for _ in 1..rotations:
+    image = image.rotate90Degrees()
+  if angle == 0.0:
+    return image
   let
     radians = degToRad(angle)
     alpha = -tan(radians / 2)
     beta = sin(radians)
-  if alpha == 0.0 and beta == 0.0: return image
-  let
-    newWidth = int(trunc(abs(float(image.width) * sin(radians)) +
-                   abs(float(image.height) * cos(radians))))
-    newHeight = int(trunc(abs(float(image.width) * cos(radians)) +
-                    abs(float(image.height) * sin(radians))))
+  if alpha == 0.0 and beta == 0.0:
+    return image
   image = image.shearX(alpha).shearY(beta).shearX(alpha)
   image.trim()
 
@@ -679,8 +657,8 @@ proc alphaBleed*(image: Image) =
   proc minifyBy2Alpha(image: Image): Image =
     ## Scales the image down by an integer scale.
     result = newImage(image.width div 2, image.height div 2, image.channels)
-    for x in 0..<result.width:
-      for y in 0..<result.height:
+    for x in 0 ..< result.width:
+      for y in 0 ..< result.height:
         var
           sumR = 0
           sumG = 0
@@ -705,8 +683,9 @@ proc alphaBleed*(image: Image) =
           result.putRgba(x, y, rgba)
 
   # scale image down in layers, only using opaque pixels
-  var layers: seq[Image]
-  var min = image.minifyBy2Alpha()
+  var
+    layers: seq[Image]
+    min = image.minifyBy2Alpha()
   while min.width >= 1 and min.height >= 1:
     layers.add min
     min = min.minifyBy2Alpha()
@@ -729,15 +708,13 @@ proc alphaBleed*(image: Image) =
       image.putRgba(x, y, rgba)
 
 proc fillRoundedRect*(
-    image: Image,
-    rect: Rect,
-    radius: float,
-    rgba: ColorRGBA
-  ) =
+  image: Image, rect: Rect, radius: float, rgba: ColorRGBA
+) =
   ## Fills image with a rounded rectangle.
   image.fill(rgba)
-  let borderWidth = radius
-  let borderWidthPx = int ceil(radius)
+  let
+    borderWidth = radius
+    borderWidthPx = int ceil(radius)
   var corner = newImage(borderWidthPx, borderWidthPx, 4)
   corner.fillCirle(vec2(borderWidth, borderWidth), radius, rgba)
   image.blit(corner, vec2(0, 0))
@@ -749,12 +726,8 @@ proc fillRoundedRect*(
   image.blit(corner, vec2(0, rect.h - borderWidth)) # SW
 
 proc strokeRoundedRect*(
-    image: Image,
-    rect: Rect,
-    radius,
-    border: float,
-    rgba: ColorRGBA
-  ) =
+  image: Image, rect: Rect, radius, border: float, rgba: ColorRGBA
+) =
   ## Fills image with a stroked rounded rectangle.
   #var radius = min(radius, rect.w/2)
   for i in 0 ..< int(border):
@@ -765,7 +738,7 @@ proc strokeRoundedRect*(
       rect.w - f*2,
       rect.h - f*2,
     ), rgba)
-  let borderWidth = radius + border/2
+  let borderWidth = radius + border / 2
   let borderWidthPx = int ceil(borderWidth)
   var corner = newImage(borderWidthPx, borderWidthPx, 4)
   corner.strokeCirle(vec2(borderWidth, borderWidth), radius, border, rgba)
@@ -782,11 +755,7 @@ proc copy*(image: Image): Image =
   result = newImage(image.width, image.height, image.channels)
   result.data = image.data
 
-proc blur*(
-    image: Image,
-    xBlur: int,
-    yBlur: int
-  ): Image =
+proc blur*(image: Image, xBlur: int, yBlur: int): Image =
   ## Blurs the image by x and y directions.
   var
     blurX: Image
