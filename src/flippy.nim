@@ -176,6 +176,50 @@ proc getRgbaSafe*(image: Image, x, y: int): ColorRGBA {.inline.} =
   if image.inside(x, y):
     return image.getRgba(x, y)
 
+func moduloMod(n, M: int): int = ((n mod M) + M) mod M
+
+func lerp(a, b: Color, v: float): Color =
+  result.r = lerp(a.r, b.r, v)
+  result.g = lerp(a.g, b.g, v)
+  result.b = lerp(a.b, b.b, v)
+  result.a = lerp(a.a, b.a, v)
+
+proc getRgbaSmooth*(image: Image, x, y: float64): ColorRGBA {.inline.} =
+  ## Gets a pixel as (x, y) floats.
+
+  let
+    minX = floor(x).int
+    difX = (x - minX.float32)
+
+    minY = floor(y).int
+    difY = (y - minY.float32)
+
+    vX0Y0 = image.getRgba(
+      moduloMod(minX, image.width),
+      moduloMod(minY, image.height),
+    ).color()
+
+    vX1Y0 = image.getRgba(
+      moduloMod(minX + 1, image.width),
+      moduloMod(minY, image.height),
+    ).color()
+
+    vX0Y1 = image.getRgba(
+      moduloMod(minX, image.width),
+      moduloMod(minY + 1, image.height),
+    ).color()
+
+    vX1Y1 = image.getRgba(
+      moduloMod(minX + 1, image.width),
+      moduloMod(minY + 1, image.height),
+    ).color()
+
+    bottomMix = lerp(vX0Y0, vX1Y0, difX)
+    topMix = lerp(vX0Y1, vX1Y1, difX)
+    finalMix = lerp(bottomMix, topMix, difY)
+
+  return finalMix.rgba()
+
 proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
   ## Puts a ColorRGBA pixel back.
   if image.channels == 3:
@@ -198,6 +242,38 @@ proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
   ## Puts pixel onto the image or safely ignores this command if pixel is outside the image.
   if image.inside(x, y):
     image.putRgba(x, y, rgba)
+
+proc minifyBy2*(image: Image): Image =
+  ## Scales the image down by an integer scale.
+  result = newImage(image.width div 2, image.height div 2, image.channels)
+  for x in 0..<result.width:
+    for y in 0..<result.height:
+      var color =
+        image.getRgba(x * 2 + 0, y * 2 + 0).color / 4.0 +
+        image.getRgba(x * 2 + 1, y * 2 + 0).color / 4.0 +
+        image.getRgba(x * 2 + 1, y * 2 + 1).color / 4.0 +
+        image.getRgba(x * 2 + 0, y * 2 + 1).color / 4.0
+      result.putRgba(x, y, color.rgba)
+
+proc minify*(image: Image, scale: int): Image =
+  ## Scales the image down by an integer scale.
+  result = image
+  for i in 1..<scale:
+    result = result.minifyBy2()
+
+proc magnify*(image: Image, scale: int): Image =
+  ## Scales image image up by an integer scale.
+  result = newImage(
+    image.filePath,
+    image.width * scale,
+    image.height * scale,
+    image.channels
+  )
+  for x in 0..<result.width:
+    for y in 0..<result.height:
+      var rgba =
+        image.getRgba(x div scale, y div scale)
+      result.putRgba(x, y, rgba)
 
 proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
   ## Blits rectangle from one image to the other image.
@@ -289,20 +365,32 @@ proc blit*(destImage: Image, srcImage: Image, mat: Mat4) =
 
 proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending.
-  let matInv = mat.inverse()
-  let (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
+  var srcImage = srcImage
+  let
+    matInv = mat.inverse()
+    (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
 
-  # compute movement vectors
-  let start = matInv * vec3(0.5, 0.5, 0)
-  let stepX = matInv * vec3(1.5, 0.5, 0) - start
-  let stepY = matInv * vec3(0.5, 1.5, 0) - start
+  var
+    # compute movement vectors
+    start = matInv * vec3(0.5, 0.5, 0)
+    stepX = matInv * vec3(1.5, 0.5, 0) - start
+    stepY = matInv * vec3(0.5, 1.5, 0) - start
+
+    minFilterBy2 = max(stepX.length, stepY.length)
+
+  while minFilterBy2 > 2.0:
+    srcImage = srcImage.minifyBy2()
+    start /= 2
+    stepX /= 2
+    stepY /= 2
+    minFilterBy2 /= 2
 
   # fill the bounding rectangle
   for x in xStart..<xEnd:
     for y in yStart..<yEnd:
-      let srcV = roundPixelVec(start + stepX * float32(x) + stepY * float32(y))
+      let srcV = start + stepX * float32(x) + stepY * float32(y)
       if srcImage.inside(int srcV.x, int srcV.y):
-        var rgba = srcImage.getRgba(srcV.x, srcV.y)
+        var rgba = srcImage.getRgbaSmooth(srcV.x, srcV.y)
         if rgba.a == uint8(255):
           destImage.putRgba(x, y, rgba)
         elif rgba.a > uint8(0):
@@ -462,38 +550,6 @@ proc ninePatch*(
   ## Draws a 9-patch
   image.fillRect(rect, fill)
   image.strokeRect(rect, stroke)
-
-proc minifyBy2*(image: Image): Image =
-  ## Scales the image down by an integer scale.
-  result = newImage(image.width div 2, image.height div 2, image.channels)
-  for x in 0..<result.width:
-    for y in 0..<result.height:
-      var color =
-        image.getRgba(x * 2 + 0, y * 2 + 0).color / 4.0 +
-        image.getRgba(x * 2 + 1, y * 2 + 0).color / 4.0 +
-        image.getRgba(x * 2 + 1, y * 2 + 1).color / 4.0 +
-        image.getRgba(x * 2 + 0, y * 2 + 1).color / 4.0
-      result.putRgba(x, y, color.rgba)
-
-proc minify*(image: Image, scale: int): Image =
-  ## Scales the image down by an integer scale.
-  result = image
-  for i in 1..<scale:
-    result = result.minifyBy2()
-
-proc magnify*(image: Image, scale: int): Image =
-  ## Scales image image up by an integer scale.
-  result = newImage(
-    image.filePath,
-    image.width * scale,
-    image.height * scale,
-    image.channels
-  )
-  for x in 0..<result.width:
-    for y in 0..<result.height:
-      var rgba =
-        image.getRgba(x div scale, y div scale)
-      result.putRgba(x, y, rgba)
 
 proc fill*(image: Image, rgba: ColorRgba) =
   ## Fills the image with a solid color.
@@ -840,3 +896,14 @@ proc blur*(
     blurY = blurX
 
   return blurY
+
+proc resize*(srcImage: Image, width, height: int): Image =
+  result = newImage(width, height, srcImage.channels)
+  result.blitWithAlpha(
+    srcImage,
+    scaleMat(vec3(
+      (width + 1).float / srcImage.width.float,
+      (height + 1).float / srcImage.height.float,
+      1
+    ))
+  )

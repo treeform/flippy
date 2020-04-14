@@ -47,6 +47,7 @@ block:
   )
 
   var redSquare = loadImage("redsquare.png")
+  redSquare.alphaBleed()
   main.blitWithAlpha(
     redSquare,
     scale(vec3(1, 1, 1)) * rotateZ(-0.3) * translate(vec3(100, 100, 0))
@@ -153,6 +154,24 @@ block:
   image.alphaBleed()
   image.removeAlpha()
   image.save("tree.bleed.png")
+
+block:
+  echo "# Test resize min"
+  var image = loadImage("lenna.png")
+  image = image.resize(100, 100)
+  image.save("lenna.resized.100x100.png")
+
+block:
+  echo "# Test resize mag"
+  var image = loadImage("lenna.png")
+  image = image.resize(1000, 1000)
+  image.save("lenna.resized.1000x1000.png")
+
+block:
+  echo "# Test resize min/mag"
+  var image = loadImage("lenna.png")
+  image = image.resize(1000, 100)
+  image.save("lenna.resized.1000x100.png")
 
 block:
   echo "# Unicode file name"
