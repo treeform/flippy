@@ -1,4 +1,4 @@
-import chroma, math, os, strformat, vmath
+import chroma, math, os, snappy, streams, strformat, vmath
 
 when defined(useStb):
   import stb_image/read as stbi
@@ -6,11 +6,17 @@ when defined(useStb):
 else:
   import nimPNG
 
-type Image* = ref object
-  ## Main image object that holds the bitmap data.
-  filePath*: string
-  width*, height*, channels*, format*: int
-  data*: seq[uint8]
+const version = 1
+
+type
+  Image* = ref object
+    ## Main image object that holds the bitmap data.
+    filePath*: string
+    width*, height*, channels*, format*: int
+    data*: seq[uint8]
+
+  Flippy* = object
+    mipmaps*: seq[Image]
 
 proc `+`[T: ColorRGBA | Color](a, b: T): T =
   ## Adds two colors together.
@@ -870,3 +876,64 @@ proc resize*(srcImage: Image, width, height: int): Image =
       1
     ))
   )
+
+func width*(flippy: Flippy): int =
+  flippy.mipmaps[0].width
+
+func height*(flippy: Flippy): int =
+  flippy.mipmaps[0].height
+
+proc save*(flippy: Flippy, filePath: string) =
+  ## Flippy is a special file format that is fast to load and save with mip maps.
+  var f = newFileStream(filePath, fmWrite)
+  defer: f.close()
+
+  f.write("flip")
+  f.write(version.uint32)
+  for mip in flippy.mipmaps:
+    var zipped = snappy.compress(mip.data)
+    f.write("mip!")
+    f.write(mip.width.uint32)
+    f.write(mip.height.uint32)
+    f.write(len(zipped).uint32)
+    f.writeData(zipped[0].addr, len(zipped))
+
+proc pngToFlippy*(pngPath, flippyPath: string) =
+  var
+    image = loadImage(pngPath)
+    flippy = Flippy()
+  image.alphaBleed()
+  var mip = image
+  while true:
+    flippy.mipmaps.add mip
+    if mip.width == 1 or mip.height == 1:
+      break
+    mip = mip.minify(2)
+  flippy.save(flippyPath)
+
+proc loadFlippy*(filePath: string): Flippy =
+  ## Flippy is a special file format that is fast to load and save with mip maps.
+  var f = newFileStream(filePath, fmRead)
+  defer: f.close()
+
+  if f.readStr(4) != "flip":
+    raise newException(Exception, &"Invalid Flippy header {filePath}.")
+
+  if f.readUint32() != version:
+    raise newException(Exception, &"Invalid Flippy version {filePath}.")
+
+  while not f.atEnd():
+    if f.readStr(4) != "mip!":
+      raise newException(Exception, &"Invalid Flippy sub header {filePath}.")
+
+    var mip = Image()
+    mip.width = int f.readUint32()
+    mip.height = int f.readUint32()
+    mip.channels = 4
+    let zippedLen = f.readUint32().int
+    var zipped = newSeq[uint8](zippedLen)
+    let read = f.readData(zipped[0].addr, zippedLen)
+    if read != zippedLen:
+      raise newException(Exception, "Flippy read error.")
+    mip.data = snappy.uncompress(zipped)
+    result.mipmaps.add(mip)

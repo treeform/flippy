@@ -1,4 +1,4 @@
-import chroma, flippy, slates, vmath
+import chroma, flippy, vmath
 
 block:
   echo "# Test Blur"
@@ -200,13 +200,13 @@ block:
   assert image.height != 0
 
 block:
-  echo "# Test making Slate from .png"
-  pngToSlate("lenna.png", "lenna.slate")
+  echo "# Test making Flippy from .png"
+  pngToFlippy("lenna.png", "lenna.flippy")
 
 block:
-  echo "# Test Slate load/save"
-  let slate = loadSlate("lenna2.slate")
-  assert slate.width() == 512
-  assert slate.height() == 512
-  assert len(slate.mipmaps) == 10
-  slate.save("lenna2.slate")
+  echo "# Test Flippy load/save"
+  let flippy = loadFlippy("lenna2.flippy")
+  assert flippy.width() == 512
+  assert flippy.height() == 512
+  assert len(flippy.mipmaps) == 10
+  flippy.save("lenna2.flippy")
