@@ -1,4 +1,4 @@
-import chroma, math, os, snappy, streams, strformat, strutils, vmath
+import chroma, math, os, snappy, streams, strformat, vmath
 
 when defined(useStb):
   import stb_image/read as stbi
@@ -916,7 +916,7 @@ proc loadFlippy*(filePath: string): Flippy =
   var f = newFileStream(filePath, fmRead)
   defer: f.close()
 
-  if f.readStr(4) != &"flip":
+  if f.readStr(4) != "flip":
     raise newException(Exception, &"Invalid Flippy header {filePath}.")
 
   if f.readUint32() != version:
