@@ -1,4 +1,4 @@
-import chroma, flippy, vmath
+import chroma, flippy, slates, vmath
 
 block:
   echo "# Test Blur"
@@ -198,3 +198,15 @@ block:
   var image = loadImage("树.png")
   assert image.width != 0
   assert image.height != 0
+
+block:
+  echo "# Test making Slate from .png"
+  pngToSlate("lenna.png", "lenna.slate")
+
+block:
+  echo "# Test Slate load/save"
+  let slate = loadSlate("lenna2.slate")
+  assert slate.width() == 512
+  assert slate.height() == 512
+  assert len(slate.mipmaps) == 10
+  slate.save("lenna2.slate")
