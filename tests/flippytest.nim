@@ -1,4 +1,4 @@
-import chroma, images, flippy, strutils, vmath
+import chroma, flippy, vmath
 
 block:
   echo "# Test Blur"
