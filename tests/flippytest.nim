@@ -201,7 +201,7 @@ block:
 
 block:
   echo "# Test making Flippy from .png"
-  pngToFlippy("lenna.png", "lenna2.flippy")
+  pngToFlippy("lenna.png", "lenna.flippy")
 
 block:
   echo "# Test Flippy load/save"

@@ -888,7 +888,8 @@ proc save*(flippy: Flippy, filePath: string) =
   var f = newFileStream(filePath, fmWrite)
   defer: f.close()
 
-  f.write(&"flippy!!0x{version.toHex(4)}\0")
+  f.write("flip")
+  f.write(version.uint32)
   for mip in flippy.mipmaps:
     var zipped = snappy.compress(mip.data)
     f.write("mip!")
@@ -915,8 +916,11 @@ proc loadFlippy*(filePath: string): Flippy =
   var f = newFileStream(filePath, fmRead)
   defer: f.close()
 
-  if f.readStr(15) != &"flippy!!0x{version.toHex(4)}\0":
+  if f.readStr(4) != &"flip":
     raise newException(Exception, &"Invalid Flippy header {filePath}.")
+
+  if f.readUint32() != version:
+    raise newException(Exception, &"Invalid Flippy version {filePath}.")
 
   while not f.atEnd():
     if f.readStr(4) != "mip!":
