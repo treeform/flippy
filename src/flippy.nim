@@ -877,6 +877,29 @@ proc resize*(srcImage: Image, width, height: int): Image =
     ))
   )
 
+proc outlineBorder*(image: Image, borderPx: int): Image =
+  ## Adds n pixel border around alpha parts of the image.
+  result = newImage(
+    image.width + borderPx * 2,
+    image.height + borderPx * 3,
+    image.channels
+  )
+  for y in 0 ..< result.height:
+    for x in 0 ..< result.width:
+
+      var filled = false
+      for bx in -borderPx .. borderPx:
+        for by in -borderPx .. borderPx:
+          var rgba = image.getRgbaSafe(x + bx - borderPx, y - by - borderPx)
+          if rgba.a > 0:
+            filled = true
+            break
+        if filled:
+          break
+      if filled:
+        result.putRgba(x, y, rgba(255, 255, 255, 255))
+
+
 func width*(flippy: Flippy): int =
   flippy.mipmaps[0].width
 
