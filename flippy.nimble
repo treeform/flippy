@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.4.1"
+version       = "0.4.2"
 author        = "treeform"
 description   = "Flippy is a simple 2d image and drawing library."
 license       = "MIT"
