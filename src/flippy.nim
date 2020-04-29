@@ -297,6 +297,24 @@ proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
       var rgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
       destImage.putRgbaSafe(int(dest.x) + x, int(dest.y) + y, rgba)
 
+proc mix(srcRgba, destRgba: ColorRGBA): ColorRGBA =
+  let a = float(srcRgba.a) / 255.0
+  result.r = uint8(float(destRgba.r) * (1 - a) + float(srcRgba.r) * a)
+  result.g = uint8(float(destRgba.g) * (1 - a) + float(srcRgba.g) * a)
+  result.b = uint8(float(destRgba.b) * (1 - a) + float(srcRgba.b) * a)
+  result.a = uint8(clamp(float(destRgba.a) + float(srcRgba.a), 0, 255))
+
+proc blitWithAlpha*(destImage: Image, srcImage: Image, src, dest: Rect) =
+  ## Blits rectangle from one image to the other image.
+  assert src.w == dest.w and src.h == dest.h
+  for x in 0..<int(src.w):
+    for y in 0..<int(src.h):
+      let
+        srcRgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
+        destRgba = destImage.getRgbaSafe(int(dest.x) + x, int(dest.y) + y)
+        rgba = mix(srcRgba, destRgba)
+      destImage.putRgbaSafe(int(dest.x) + x, int(dest.y) + y, rgba)
+
 proc blitWithMask*(
     destImage: Image,
     srcImage: Image,
