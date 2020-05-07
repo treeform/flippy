@@ -1,4 +1,6 @@
-import chroma, flippy, vmath
+import chroma, flippy, vmath, os, osproc
+
+setCurrentDir(getCurrentDir() / "tests")
 
 block:
   echo "# Test Blur"
@@ -210,3 +212,8 @@ block:
   assert flippy.height() == 512
   assert len(flippy.mipmaps) == 10
   flippy.save("lenna2.flippy")
+
+let (outp, _) = execCmdEx("git diff tests/*.png")
+if len(outp) != 0:
+  echo outp
+  quit("Output does not match")
