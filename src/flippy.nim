@@ -116,29 +116,29 @@ proc copy*(image: Image): Image =
 proc save*(image: Image) =
   ## Saves a png image.
   when defined(useStb):
-    var sucess = writePNG(
+    var success = writePNG(
       image.filePath,
       image.width,
       image.height,
       image.channels,
       image.data)
   else:
-    var sucess = false
+    var success = false
     if image.channels == 4:
-      sucess = savePNG32(
+      success = savePNG32(
         image.filePath,
         cast[string](image.data),
         image.width,
         image.height
       )
     elif image.channels == 3:
-      sucess = savePNG24(
+      success = savePNG24(
         image.filePath,
         cast[string](image.data),
         image.width,
         image.height
       )
-  if not sucess:
+  if not success:
     raise newException(Exception, "Failed to save Image: " & image.filePath)
 
 proc save*(image: Image, filePath: string) =
@@ -326,22 +326,22 @@ proc blitWithMask*(
   for x in 0..<int(src.w):
     for y in 0..<int(src.h):
       let
-        xsrc = int(src.x) + x
-        ysrc = int(src.y) + y
-        xdest = int(dest.x) + x
-        ydest = int(dest.y) + y
-      if destImage.inside(xdest, ydest) and srcImage.inside(xsrc, ysrc):
-        var srcRgba = srcImage.getRgba(xsrc, ysrc)
+        xSrc = int(src.x) + x
+        ySrc = int(src.y) + y
+        xDest = int(dest.x) + x
+        yDest = int(dest.y) + y
+      if destImage.inside(xDest, yDest) and srcImage.inside(xSrc, ySrc):
+        var srcRgba = srcImage.getRgba(xSrc, ySrc)
         if srcRgba.a == uint8(255):
-          destImage.putRgba(xdest, ydest, rgba)
+          destImage.putRgba(xDest, yDest, rgba)
         elif srcRgba.a > uint8(0):
-          var destRgba = destImage.getRgba(xdest, ydest)
+          var destRgba = destImage.getRgba(xDest, yDest)
           let a = float(srcRgba.a)/255.0
           destRgba.r = uint8(float(destRgba.r) * (1-a) + float(rgba.r) * a)
           destRgba.g = uint8(float(destRgba.g) * (1-a) + float(rgba.g) * a)
           destRgba.b = uint8(float(destRgba.b) * (1-a) + float(rgba.b) * a)
           destRgba.a = 255
-          destImage.putRgba(xdest, ydest, destRgba)
+          destImage.putRgba(xDest, yDest, destRgba)
 
 proc computeBounds(
   destImage, srcImage: Image, mat: Mat4, matInv: Mat4
@@ -529,12 +529,12 @@ proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
 proc fillRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
   ## Draws a filled rectangle.
   let
-    minx = max(int(rect.x), 0)
-    maxx = min(int(rect.x + rect.w), image.width)
-    miny = max(int(rect.y), 0)
-    maxy = min(int(rect.y + rect.h), image.height)
-  for x in minx ..< maxx:
-    for y in miny ..< maxy:
+    minX = max(int(rect.x), 0)
+    maxX = min(int(rect.x + rect.w), image.width)
+    minY = max(int(rect.y), 0)
+    maxY = min(int(rect.y + rect.h), image.height)
+  for x in minX ..< maxX:
+    for y in minY ..< maxY:
       image.putRgba(x, y, rgba)
 
 proc strokeRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
@@ -547,15 +547,15 @@ proc strokeRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
   image.line(at + vec2(0, wh.y), at + vec2(wh.x, wh.y), rgba)
   image.line(at + vec2(0, wh.y), at, rgba)
 
-proc fillCirle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
+proc fillCircle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
   ## Draws a filled circle with antialiased edges.
   let
-    minx = max(int(pos.x - radius), 0)
-    maxx = min(int(pos.x + radius), image.width)
-    miny = max(int(pos.y - radius), 0)
-    maxy = min(int(pos.y + radius), image.height)
-  for y in miny ..< maxy:
-    for x in minx ..< maxx:
+    minX = max(int(pos.x - radius), 0)
+    maxX = min(int(pos.x + radius), image.width)
+    minY = max(int(pos.y - radius), 0)
+    maxY = min(int(pos.y + radius), image.height)
+  for y in minY ..< maxY:
+    for x in minX ..< maxX:
       let
         pixelPos = vec2(float x, float y) + vec2(0.5, 0.5)
         pixelDist = pixelPos.dist(pos)
@@ -573,17 +573,17 @@ proc fillCirle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
         rgbaAA.a = uint8(float(touch) * 255.0 / (n * n))
         image.putRgba(x, y, rgbaAA)
 
-proc strokeCirle*(
+proc strokeCircle*(
   image: Image, pos: Vec2, radius, border: float, rgba: ColorRGBA
 ) =
   ## Draws a border of circle with antialiased edges.
   let
-    minx = max(int(pos.x - radius - border), 0)
-    maxx = min(int(pos.x + radius + border), image.width)
-    miny = max(int(pos.y - radius - border), 0)
-    maxy = min(int(pos.y + radius + border), image.height)
-  for y in miny ..< maxy:
-    for x in minx ..< maxx:
+    minX = max(int(pos.x - radius - border), 0)
+    maxX = min(int(pos.x + radius + border), image.width)
+    minY = max(int(pos.y - radius - border), 0)
+    maxY = min(int(pos.y + radius + border), image.height)
+  for y in minY ..< maxY:
+    for x in minX ..< maxX:
       let
         pixelPos = vec2(float x, float y) + vec2(0.5, 0.5)
         pixelDist = pixelPos.dist(pos)
@@ -611,7 +611,7 @@ proc fillRoundedRect*(
     borderWidth = radius
     borderWidthPx = int ceil(radius)
   var corner = newImage(borderWidthPx, borderWidthPx, 4)
-  corner.fillCirle(vec2(borderWidth, borderWidth), radius, rgba)
+  corner.fillCircle(vec2(borderWidth, borderWidth), radius, rgba)
   image.blit(corner, vec2(0, 0))
   corner = corner.flipHorizontal()
   image.blit(corner, vec2(rect.w - borderWidth, 0)) # NE
@@ -636,7 +636,7 @@ proc strokeRoundedRect*(
   let borderWidth = radius + border / 2
   let borderWidthPx = int ceil(borderWidth)
   var corner = newImage(borderWidthPx, borderWidthPx, 4)
-  corner.strokeCirle(vec2(borderWidth, borderWidth), radius, border, rgba)
+  corner.strokeCircle(vec2(borderWidth, borderWidth), radius, border, rgba)
   image.blit(corner, vec2(0, 0))
   corner = corner.flipHorizontal()
   image.blit(corner, vec2(rect.w - borderWidth, 0)) # NE

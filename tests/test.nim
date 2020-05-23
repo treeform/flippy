@@ -90,19 +90,19 @@ block:
   assert img.getRgba(0, 0) == rgba(255, 255, 255, 255)
 
 block:
-  echo "# Test fillCirle"
+  echo "# Test fillCircle"
   var image = newImage(20, 20, 4)
-  image.fillCirle(pos = vec2(10, 10), radius = 10, rgba = rgba(255, 0, 0, 255))
+  image.fillCircle(pos = vec2(10, 10), radius = 10, rgba = rgba(255, 0, 0, 255))
   var image10x = image.magnify(10)
-  image10x.save("fillCirle.png")
+  image10x.save("fillCircle.png")
 
 block:
-  echo "# Test strokeCirle"
+  echo "# Test strokeCircle"
   let image = newImage(20, 20, 4)
-  image.strokeCirle(pos = vec2(10, 10), radius = 8,
+  image.strokeCircle(pos = vec2(10, 10), radius = 8,
     border = 2, rgba = rgba(255, 0, 0, 255))
   var image10x = image.magnify(10)
-  image10x.save("strokeCirle.png")
+  image10x.save("strokeCircle.png")
 
 block:
   echo "# Test fillRoundedRect"
