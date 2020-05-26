@@ -909,7 +909,7 @@ proc outlineBorder*(image: Image, borderPx: int): Image =
       for bx in -borderPx .. borderPx:
         for by in -borderPx .. borderPx:
           var rgba = image.getRgbaSafe(x + bx - borderPx, y - by - borderPx)
-          if rgba.a > 0:
+          if rgba.a > 0.uint8:
             filled = true
             break
         if filled:
