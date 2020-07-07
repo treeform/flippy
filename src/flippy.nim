@@ -1,4 +1,4 @@
-import chroma, math, os, snappy, streams, strformat, vmath
+import chroma, math, os, supersnappy, streams, strformat, vmath
 
 when defined(useStb):
   import stb_image/read as stbi
@@ -932,7 +932,7 @@ proc save*(flippy: Flippy, filePath: string) =
   f.write("flip")
   f.write(version.uint32)
   for mip in flippy.mipmaps:
-    var zipped = snappy.compress(mip.data)
+    var zipped = compress(mip.data)
     f.write("mip!")
     f.write(mip.width.uint32)
     f.write(mip.height.uint32)
@@ -976,5 +976,5 @@ proc loadFlippy*(filePath: string): Flippy =
     let read = f.readData(zipped[0].addr, zippedLen)
     if read != zippedLen:
       raise newException(Exception, "Flippy read error.")
-    mip.data = snappy.uncompress(zipped)
+    mip.data = uncompress(zipped)
     result.mipmaps.add(mip)
