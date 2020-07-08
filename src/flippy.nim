@@ -165,10 +165,13 @@ proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
     result.b = image.data[(image.width * y + x) * 3 + 2]
     result.a = 255
   elif image.channels == 4:
-    result.r = image.data[(image.width * y + x) * 4 + 0]
-    result.g = image.data[(image.width * y + x) * 4 + 1]
-    result.b = image.data[(image.width * y + x) * 4 + 2]
-    result.a = image.data[(image.width * y + x) * 4 + 3]
+    let offset = (image.width * y + x) * 4
+    result = cast[ColorRGBA](cast[ptr uint32](image.data[offset].addr)[])
+    # This accomplishes the same thing as:
+    # result.r = image.data[(image.width * y + x) * 4 + 0]
+    # result.g = image.data[(image.width * y + x) * 4 + 1]
+    # result.b = image.data[(image.width * y + x) * 4 + 2]
+    # result.a = image.data[(image.width * y + x) * 4 + 3]
   else:
     raise newException(Exception,
       &"Unsupported number of channels in {$image}")
@@ -233,10 +236,13 @@ proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
     image.data[(image.width * y + x) * 3 + 1] = rgba.g
     image.data[(image.width * y + x) * 3 + 2] = rgba.b
   elif image.channels == 4:
-    image.data[(image.width * y + x) * 4 + 0] = rgba.r
-    image.data[(image.width * y + x) * 4 + 1] = rgba.g
-    image.data[(image.width * y + x) * 4 + 2] = rgba.b
-    image.data[(image.width * y + x) * 4 + 3] = rgba.a
+    let offset = (image.width * y + x) * 4
+    cast[ptr uint32](image.data[offset].addr)[] = cast[uint32](rgba)
+    # This accomplishes the same thing as:
+    # image.data[(image.width * y + x) * 4 + 0] = rgba.r
+    # image.data[(image.width * y + x) * 4 + 1] = rgba.g
+    # image.data[(image.width * y + x) * 4 + 2] = rgba.b
+    # image.data[(image.width * y + x) * 4 + 3] = rgba.a
   else:
     raise newException(Exception,
       &"Unsupported number of channels in {$image}")
@@ -483,10 +489,12 @@ proc fill*(image: Image, rgba: ColorRgba) =
   elif image.channels == 4:
     var i = 0
     while i < image.data.len:
-      image.data[i + 0] = rgba.r
-      image.data[i + 1] = rgba.g
-      image.data[i + 2] = rgba.b
-      image.data[i + 3] = rgba.a
+      cast[ptr uint32](image.data[i + 0].addr)[] = cast[uint32](rgba)
+      # This accomplishes the same thing as:
+      # image.data[i + 0] = rgba.r
+      # image.data[i + 1] = rgba.g
+      # image.data[i + 2] = rgba.b
+      # image.data[i + 3] = rgba.a
       i += 4
   else:
     raise newException(Exception, "File format not supported")
