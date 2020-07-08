@@ -167,6 +167,11 @@ proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
   elif image.channels == 4:
     let offset = (image.width * y + x) * 4
     result = cast[ColorRGBA](cast[ptr uint32](image.data[offset].addr)[])
+    # This accomplishes the same thing as:
+    # result.r = image.data[(image.width * y + x) * 4 + 0]
+    # result.g = image.data[(image.width * y + x) * 4 + 1]
+    # result.b = image.data[(image.width * y + x) * 4 + 2]
+    # result.a = image.data[(image.width * y + x) * 4 + 3]
   else:
     raise newException(Exception,
       &"Unsupported number of channels in {$image}")
@@ -233,6 +238,11 @@ proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
   elif image.channels == 4:
     let offset = (image.width * y + x) * 4
     cast[ptr uint32](image.data[offset].addr)[] = cast[uint32](rgba)
+    # This accomplishes the same thing as:
+    # image.data[(image.width * y + x) * 4 + 0] = rgba.r
+    # image.data[(image.width * y + x) * 4 + 1] = rgba.g
+    # image.data[(image.width * y + x) * 4 + 2] = rgba.b
+    # image.data[(image.width * y + x) * 4 + 3] = rgba.a
   else:
     raise newException(Exception,
       &"Unsupported number of channels in {$image}")
