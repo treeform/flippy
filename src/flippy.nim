@@ -489,10 +489,12 @@ proc fill*(image: Image, rgba: ColorRgba) =
   elif image.channels == 4:
     var i = 0
     while i < image.data.len:
-      image.data[i + 0] = rgba.r
-      image.data[i + 1] = rgba.g
-      image.data[i + 2] = rgba.b
-      image.data[i + 3] = rgba.a
+      cast[ptr uint32](image.data[i + 0].addr)[] = cast[uint32](rgba)
+      # This accomplishes the same thing as:
+      # image.data[i + 0] = rgba.r
+      # image.data[i + 1] = rgba.g
+      # image.data[i + 2] = rgba.b
+      # image.data[i + 3] = rgba.a
       i += 4
   else:
     raise newException(Exception, "File format not supported")
