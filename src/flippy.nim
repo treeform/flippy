@@ -259,8 +259,8 @@ proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
 proc minifyBy2*(image: Image): Image =
   ## Scales the image down by an integer scale.
   result = newImage(image.width div 2, image.height div 2, image.channels)
-  for x in 0..<result.width:
-    for y in 0..<result.height:
+  for y in 0 ..< result.height:
+    for x in 0 ..< result.width:
       var color =
         image.getRgba(x * 2 + 0, y * 2 + 0).color / 4.0 +
         image.getRgba(x * 2 + 1, y * 2 + 0).color / 4.0 +
@@ -282,26 +282,37 @@ proc magnify*(image: Image, scale: int): Image =
     image.height * scale,
     image.channels
   )
-  for x in 0..<result.width:
-    for y in 0..<result.height:
+  for y in 0 ..< result.height:
+    for x in 0 ..< result.width:
       var rgba =
         image.getRgba(x div scale, y div scale)
       result.putRgba(x, y, rgba)
 
-proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
-  ## Blits rectangle from one image to the other image.
-  for x in 0..<int(srcImage.width):
-    for y in 0..<int(srcImage.height):
-      var rgba = srcImage.getRgba(x, y)
-      destImage.putRgbaSafe(int(pos.x) + x, int(pos.y) + y, rgba)
-
 proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
   ## Blits rectangle from one image to the other image.
-  assert src.w == dest.w and src.h == dest.h
-  for x in 0..<int(src.w):
-    for y in 0..<int(src.h):
+  doAssert src.w == dest.w and src.h == dest.h
+  var src = src
+  src.x = clamp(src.x, 0, srcImage.width.float32)
+  src.y = clamp(src.y, 0, srcImage.height.float32)
+  src.w = clamp(src.w, 0, srcImage.width.float32 - src.x)
+  src.h = clamp(src.h, 0, srcImage.height.float32 - src.y)
+  var dest = dest
+  dest.x = clamp(dest.x, 0, destImage.width.float32)
+  dest.y = clamp(dest.y, 0, destImage.height.float32)
+  dest.w = clamp(dest.w, 0, destImage.width.float32 - dest.x)
+  dest.h = clamp(dest.h, 0, destImage.height.float32 - dest.y)
+  for y in 0 ..< int(dest.h):
+    for x in 0 ..< int(dest.w):
       var rgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
-      destImage.putRgbaSafe(int(dest.x) + x, int(dest.y) + y, rgba)
+      destImage.putRgba(int(dest.x) + x, int(dest.y) + y, rgba)
+
+proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
+  ## Blits rectangle from one image to the other image.
+  destImage.blit(
+    srcImage,
+    rect(0.0, 0.0, srcImage.width.float32, srcImage.height.float32),
+    rect(pos.x, pos.y, srcImage.width.float32, srcImage.height.float32)
+  )
 
 proc mix(srcRgba, destRgba: ColorRGBA): ColorRGBA =
   let a = float(srcRgba.a) / 255.0
@@ -313,8 +324,8 @@ proc mix(srcRgba, destRgba: ColorRGBA): ColorRGBA =
 proc blitWithAlpha*(destImage: Image, srcImage: Image, src, dest: Rect) =
   ## Blits rectangle from one image to the other image.
   assert src.w == dest.w and src.h == dest.h
-  for x in 0..<int(src.w):
-    for y in 0..<int(src.h):
+  for y in 0 ..< int(src.h):
+    for x in 0 ..< int(src.w):
       let
         srcRgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
         destRgba = destImage.getRgbaSafe(int(dest.x) + x, int(dest.y) + y)
@@ -329,8 +340,8 @@ proc blitWithMask*(
   ) =
   ## Blits rectangle from one image to the other image with masking color.
   assert src.w == dest.w and src.h == dest.h
-  for x in 0..<int(src.w):
-    for y in 0..<int(src.h):
+  for y in 0 ..< int(src.h):
+    for x in 0 ..< int(src.w):
       let
         xSrc = int(src.x) + x
         ySrc = int(src.y) + y
@@ -380,8 +391,8 @@ proc roundPixelVec(v: Vec3): Vec2 {.inline.} =
 proc getSubImage*(image: Image, x, y, w, h: int): Image =
   ## Gets a sub image of the main image.
   result = newImage(w, h, image.channels)
-  for x2 in 0 ..< w:
-    for y2 in 0 ..< h:
+  for y2 in 0 ..< h:
+    for x2 in 0 ..< w:
       result.putRgba(x2, y2, image.getRgba(x2 + x, y2 + y))
 
 proc trim*(image: Image): Image =
@@ -425,8 +436,8 @@ proc blit*(destImage, srcImage: Image, mat: Mat4) =
     (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
 
   # fill the bounding rectangle
-  for x in xStart..<xEnd:
-    for y in yStart..<yEnd:
+  for y in yStart ..< yEnd:
+    for x in xStart ..< xEnd:
       let destV = vec3(float32(x) + 0.5, float32(y) + 0.5, 0)
       let srcV = roundPixelVec(matInv * destV)
       if srcImage.inside(int srcV.x, int srcV.y):
@@ -456,8 +467,8 @@ proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
     minFilterBy2 /= 2
 
   # fill the bounding rectangle
-  for x in xStart..<xEnd:
-    for y in yStart..<yEnd:
+  for y in yStart ..< yEnd:
+    for x in xStart ..< xEnd:
       let srcV = start + stepX * float32(x) + stepY * float32(y)
       if srcImage.inside(int srcV.x, int srcV.y):
         var rgba = srcImage.getRgbaSmooth(srcV.x, srcV.y)
@@ -541,8 +552,8 @@ proc fillRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
     maxX = min(int(rect.x + rect.w), image.width)
     minY = max(int(rect.y), 0)
     maxY = min(int(rect.y + rect.h), image.height)
-  for x in minX ..< maxX:
-    for y in minY ..< maxY:
+  for y in minY ..< maxY:
+    for x in minX ..< maxX:
       image.putRgba(x, y, rgba)
 
 proc strokeRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
@@ -562,8 +573,8 @@ proc fillCircle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
     maxX = min(int(pos.x + radius), image.width)
     minY = max(int(pos.y - radius), 0)
     maxY = min(int(pos.y + radius), image.height)
-  for y in minY ..< maxY:
-    for x in minX ..< maxX:
+  for x in minX ..< maxX:
+    for y in minY ..< maxY:
       let
         pixelPos = vec2(float x, float y) + vec2(0.5, 0.5)
         pixelDist = pixelPos.dist(pos)
@@ -787,8 +798,8 @@ proc alphaBleed*(image: Image) =
   proc minifyBy2Alpha(image: Image): Image =
     ## Scales the image down by an integer scale.
     result = newImage(image.width div 2, image.height div 2, image.channels)
-    for x in 0 ..< result.width:
-      for y in 0 ..< result.height:
+    for y in 0 ..< result.height:
+      for x in 0 ..< result.width:
         var
           sumR = 0
           sumG = 0
@@ -821,8 +832,8 @@ proc alphaBleed*(image: Image) =
     min = min.minifyBy2Alpha()
 
   # walk over all transparent pixels, going up layers to find best colors
-  for x in 0 ..< image.width:
-    for y in 0 ..< image.height:
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
       var rgba = image.getRgba(x, y)
       if rgba.a == 0:
         var
@@ -848,8 +859,8 @@ proc blur*(image: Image, xBlur: int, yBlur: int): Image =
 
   if xBlur > 0:
     blurX = newImage(image.width, image.height, image.channels)
-    for x in 0 ..< image.width:
-      for y in 0 ..< image.height:
+    for y in 0 ..< image.height:
+      for x in 0 ..< image.width:
         var c: Color
         for xb in 0 .. xBlur:
           let c2 = image.getRgbaSafe(x + xb - xBlur div 2, y).color
@@ -870,8 +881,8 @@ proc blur*(image: Image, xBlur: int, yBlur: int): Image =
 
   if yBlur > 0:
     blurY = newImage(image.width, image.height, image.channels)
-    for x in 0 ..< image.width:
-      for y in 0 ..< image.height:
+    for y in 0 ..< image.height:
+      for x in 0 ..< image.width:
         var c: Color
         for yb in 0 .. yBlur:
           let c2 = blurX.getRgbaSafe(x, y + yb - yBlur div 2).color
