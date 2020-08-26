@@ -1,6 +1,5 @@
 ## Makes icon files used in windows and favicons.
-import flippy, cligen, flatty/binny, os
-import flatty/hexPrint
+import cligen, flatty/binny, flatty/hexPrint, flippy, os
 
 var powersOf2 = [256, 128, 64, 32, 16]
 

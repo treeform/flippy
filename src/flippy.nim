@@ -1,4 +1,4 @@
-import chroma, math, os, supersnappy, streams, strformat, vmath
+import chroma, math, os, streams, strformat, supersnappy, vmath
 
 when defined(useStb):
   import stb_image/read as stbi
@@ -69,11 +69,14 @@ proc `/`[T: ColorRGBA | Color](color: T; v: float): T =
 
 proc `$`*(image: Image): string =
   ## Display the image path, size and channels.
-  if image.filePath.len > 0:
-    result = &"<Image {image.filePath} {$image.width} x {$image.height}:" &
-      &"{$image.channels}>"
-  else:
-    result = &"<Image {$image.width} x {$image.height}: {$image.channels}>"
+  let i = image
+  try:
+    if i.filePath.len > 0:
+      result = &"<Image {i.filePath} {$i.width} x {$i.height}:{$i.channels}>"
+    else:
+      result = &"<Image {$i.width} x {$i.height}: {$i.channels}>"
+  except ValueError:
+    result = "<Image ???>"
 
 proc newImage*(width, height, channels: int): Image =
   ## Creates a new image with appropriate dimensions.
@@ -93,20 +96,23 @@ proc loadImage*(filePath: string): Image =
   ## Loads a png image.
   result = Image()
   result.filePath = filePath
-  when defined(useStb):
-    result.data = loadFromMemory(
-      cast[seq[byte]](readFile(filePath)),
-      result.width,
-      result.height,
-      result.channels,
-      stbi.Default
-    )
-  else:
-    let png = loadPNG32(filePath)
-    result.width = png.width
-    result.height = png.height
-    result.channels = 4
-    result.data = cast[seq[uint8]](png.data)
+  try:
+    when defined(useStb):
+      result.data = loadFromMemory(
+        cast[seq[byte]](readFile(filePath)),
+        result.width,
+        result.height,
+        result.channels,
+        stbi.Default
+      )
+    else:
+      let png = loadPNG32(filePath)
+      result.width = png.width
+      result.height = png.height
+      result.channels = 4
+      result.data = cast[seq[uint8]](png.data)
+  except:
+    raise newException(IOError, "Could not load: " & result.filePath)
 
 proc copy*(image: Image): Image =
   ## Copies an image creating a new image.
@@ -139,7 +145,7 @@ proc save*(image: Image) =
         image.height
       )
   if not success:
-    raise newException(Exception, "Failed to save Image: " & image.filePath)
+    raise newException(IOError, "Could not safe: " & image.filePath)
 
 proc save*(image: Image, filePath: string) =
   ## Sets image path and save the image.
@@ -152,7 +158,7 @@ proc inside*(image: Image, x, y: int): bool {.inline.} =
   ## Returns true if (x, y) is inside the image.
   x >= 0 and x < image.width and y >= 0 and y < image.height
 
-proc getRgbaUnsafe*(image: Image, x, y: int): ColorRGBA {.inline.} =
+proc getRgbaUnsafe*(image: Image, x, y: int): ColorRGBA {.inline, raises: [].} =
   ## Gets a color from (x, y) coordinates.
   ## * No bounds checking *
   ## Make sure that x, y are in bounds.
@@ -175,18 +181,17 @@ proc getRgbaUnsafe*(image: Image, x, y: int): ColorRGBA {.inline.} =
     # result.g = image.data[(image.width * y + x) * 4 + 1]
     # result.b = image.data[(image.width * y + x) * 4 + 2]
     # result.a = image.data[(image.width * y + x) * 4 + 3]
-  else:
-    raise newException(Exception,
-      &"Unsupported number of channels in {$image}")
 
-proc getRgbaUnsafe*(image: Image, x, y: float64): ColorRGBA {.inline.} =
+proc getRgbaUnsafe*(image: Image, x, y: float64): ColorRGBA
+  {.inline, raises: [].} =
   ## Gets a pixel as (x, y) floats.
   ## * No bounds checking *
   ## Make sure that x, y are in bounds.
   ## Failure in the assumptions will case unsafe memory reads.
   getRgbaUnsafe(image, int x, int y)
 
-proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
+proc getRgba*(image: Image, x, y: int): ColorRGBA
+  {.inline, raises: [].} =
   ## Gets a pixel at (x, y) or returns transparent black if outside of bounds.
   ## Slower due to bounds checking.
   if image.inside(x, y):
@@ -200,7 +205,8 @@ func lerp(a, b: Color, v: float): Color =
   result.b = lerp(a.b, b.b, v)
   result.a = lerp(a.a, b.a, v)
 
-proc getRgbaSmooth*(image: Image, x, y: float64): ColorRGBA {.inline.} =
+proc getRgbaSmooth*(image: Image, x, y: float64): ColorRGBA
+  {.inline, raises: [].} =
   ## Gets a pixel as (x, y) floats.
 
   let
@@ -236,7 +242,8 @@ proc getRgbaSmooth*(image: Image, x, y: float64): ColorRGBA {.inline.} =
 
   return finalMix.rgba()
 
-proc putRgbaUnsafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
+proc putRgbaUnsafe*(image: Image, x, y: int, rgba: ColorRGBA)
+  {.inline, raises: [].} =
   ## Puts a ColorRGBA pixel back.
   ## * No bounds checking *
   ## Make sure that x, y are in bounds.
@@ -253,18 +260,17 @@ proc putRgbaUnsafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
     # image.data[(image.width * y + x) * 4 + 1] = rgba.g
     # image.data[(image.width * y + x) * 4 + 2] = rgba.b
     # image.data[(image.width * y + x) * 4 + 3] = rgba.a
-  else:
-    raise newException(Exception,
-      &"Unsupported number of channels in {$image}")
 
-proc putRgbaUnsafe*(image: Image, x, y: float64, rgba: ColorRGBA) {.inline.} =
+proc putRgbaUnsafe*(image: Image, x, y: float64, rgba: ColorRGBA)
+  {.inline, raises: [].} =
   ## Puts a ColorRGBA pixel back as x, y floats (does not do blending).
   ## * No bounds checking *
   ## Make sure that x, y are in bounds.
   ## Failure in the assumptions will case unsafe memory writes.
   putRgbaUnsafe(image, int x, int y, rgba)
 
-proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
+proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA)
+  {.inline, raises: [].} =
   ## Puts pixel onto the image or safely ignored if pixel is outside the image.
   ## Slower due to bounds checking.
   if image.inside(x, y):
@@ -567,8 +573,6 @@ proc fill*(image: Image, rgba: ColorRgba) =
       # image.data[i + 2] = rgba.b
       # image.data[i + 3] = rgba.a
       i += 4
-  else:
-    raise newException(Exception, "File format not supported")
 
 proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
   ## Draws a line from one at vec to to vec.
@@ -996,7 +1000,6 @@ proc outlineBorder*(image: Image, borderPx: int): Image =
       if filled:
         result.putRgbaUnsafe(x, y, rgba(255, 255, 255, 255))
 
-
 func width*(flippy: Flippy): int =
   flippy.mipmaps[0].width
 
@@ -1037,14 +1040,14 @@ proc loadFlippy*(filePath: string): Flippy =
   defer: f.close()
 
   if f.readStr(4) != "flip":
-    raise newException(Exception, &"Invalid Flippy header {filePath}.")
+    raise newException(IOError, &"Invalid Flippy header {filePath}.")
 
   if f.readUint32() != version:
-    raise newException(Exception, &"Invalid Flippy version {filePath}.")
+    raise newException(IOError, &"Invalid Flippy version {filePath}.")
 
   while not f.atEnd():
     if f.readStr(4) != "mip!":
-      raise newException(Exception, &"Invalid Flippy sub header {filePath}.")
+      raise newException(IOError, &"Invalid Flippy sub header {filePath}.")
 
     var mip = Image()
     mip.width = int f.readUint32()
@@ -1054,6 +1057,6 @@ proc loadFlippy*(filePath: string): Flippy =
     var zipped = newSeq[uint8](zippedLen)
     let read = f.readData(zipped[0].addr, zippedLen)
     if read != zippedLen:
-      raise newException(Exception, "Flippy read error.")
+      raise newException(IOError, "Flippy read error.")
     mip.data = uncompress(zipped)
     result.mipmaps.add(mip)

@@ -1,7 +1,6 @@
-import chroma, flippy, vmath, os, osproc
+import chroma, flippy, os, osproc, vmath
 
 setCurrentDir(getCurrentDir() / "tests")
-
 
 block:
   echo "# Simple blit around edges"
@@ -54,7 +53,6 @@ block:
     )
 
   mainImage.save("edgeBlits.png")
-
 
 block:
   echo "# Test Blur"
