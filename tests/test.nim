@@ -2,6 +2,60 @@ import chroma, flippy, vmath, os, osproc
 
 setCurrentDir(getCurrentDir() / "tests")
 
+
+block:
+  echo "# Simple blit around edges"
+
+  var mainImage = newImage(60, 60, 4)
+
+  block:
+    var image = newImage(20, 20, 4)
+    image.fillCircle(pos = vec2(10, 10), radius = 10, rgba = rgba(255, 0, 0, 255))
+    mainImage.blit(
+      image,
+      rect(0, 0, 20, 20),
+      rect(20, -10, 20, 20)
+    )
+
+  block:
+    var image = newImage(20, 20, 4)
+    image.fillCircle(pos = vec2(10, 10), radius = 10, rgba = rgba(0, 255, 0, 255))
+    mainImage.blit(
+      image,
+      rect(0, 0, 20, 20),
+      rect(20, 50, 20, 20)
+    )
+
+  block:
+    var image = newImage(20, 20, 4)
+    image.fillCircle(pos = vec2(10, 10), radius = 10, rgba = rgba(0, 0, 255, 255))
+    mainImage.blit(
+      image,
+      rect(0, 0, 20, 20),
+      rect(-10, 20, 20, 20)
+    )
+
+  block:
+    var image = newImage(20, 20, 4)
+    image.fillCircle(pos = vec2(10, 10), radius = 10, rgba = rgba(255, 255, 255, 255))
+    mainImage.blit(
+      image,
+      rect(0, 0, 20, 20),
+      rect(50, 20, 20, 20)
+    )
+
+  block:
+    var image = newImage(20, 20, 4)
+    image.fillCircle(pos = vec2(10, 10), radius = 10, rgba = rgba(255, 0, 255, 255))
+    mainImage.blit(
+      image,
+      rect(0, 0, 20, 20),
+      rect(-1000, 20, 20, 20)
+    )
+
+  mainImage.save("edgeBlits.png")
+
+
 block:
   echo "# Test Blur"
   let image = newImage(100, 100, 4)

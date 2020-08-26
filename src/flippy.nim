@@ -146,14 +146,17 @@ proc save*(image: Image, filePath: string) =
   image.filePath = filePath
   image.save()
 
+{.push checks: off, stacktrace: off.}
+
 proc inside*(image: Image, x, y: int): bool {.inline.} =
   ## Returns true if (x, y) is inside the image.
   x >= 0 and x < image.width and y >= 0 and y < image.height
 
-proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
+proc getRgbaUnsafe*(image: Image, x, y: int): ColorRGBA {.inline.} =
   ## Gets a color from (x, y) coordinates.
-  assert x >= 0 and x < image.width
-  assert y >= 0 and y < image.height
+  ## * No bounds checking *
+  ## Make sure that x, y are in bounds.
+  ## Failure in the assumptions will case unsafe memory reads.
   if image.channels == 1:
     result.r = image.data[(image.width * y + x)]
     result.g = image.data[(image.width * y + x)]
@@ -176,14 +179,18 @@ proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
     raise newException(Exception,
       &"Unsupported number of channels in {$image}")
 
-proc getRgba*(image: Image, x, y: float64): ColorRGBA {.inline.} =
+proc getRgbaUnsafe*(image: Image, x, y: float64): ColorRGBA {.inline.} =
   ## Gets a pixel as (x, y) floats.
-  getRgba(image, int x, int y)
+  ## * No bounds checking *
+  ## Make sure that x, y are in bounds.
+  ## Failure in the assumptions will case unsafe memory reads.
+  getRgbaUnsafe(image, int x, int y)
 
-proc getRgbaSafe*(image: Image, x, y: int): ColorRGBA {.inline.} =
-  ## Gets a pixel as (x, y) but returns transparency if next sampled outside.
+proc getRgba*(image: Image, x, y: int): ColorRGBA {.inline.} =
+  ## Gets a pixel at (x, y) or returns transparent black if outside of bounds.
+  ## Slower due to bounds checking.
   if image.inside(x, y):
-    return image.getRgba(x, y)
+    return image.getRgbaUnsafe(x, y)
 
 func moduloMod(n, M: int): int = ((n mod M) + M) mod M
 
@@ -203,22 +210,22 @@ proc getRgbaSmooth*(image: Image, x, y: float64): ColorRGBA {.inline.} =
     minY = floor(y).int
     difY = (y - minY.float32)
 
-    vX0Y0 = image.getRgba(
+    vX0Y0 = image.getRgbaUnsafe(
       moduloMod(minX, image.width),
       moduloMod(minY, image.height),
     ).color()
 
-    vX1Y0 = image.getRgba(
+    vX1Y0 = image.getRgbaUnsafe(
       moduloMod(minX + 1, image.width),
       moduloMod(minY, image.height),
     ).color()
 
-    vX0Y1 = image.getRgba(
+    vX0Y1 = image.getRgbaUnsafe(
       moduloMod(minX, image.width),
       moduloMod(minY + 1, image.height),
     ).color()
 
-    vX1Y1 = image.getRgba(
+    vX1Y1 = image.getRgbaUnsafe(
       moduloMod(minX + 1, image.width),
       moduloMod(minY + 1, image.height),
     ).color()
@@ -229,8 +236,11 @@ proc getRgbaSmooth*(image: Image, x, y: float64): ColorRGBA {.inline.} =
 
   return finalMix.rgba()
 
-proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
+proc putRgbaUnsafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
   ## Puts a ColorRGBA pixel back.
+  ## * No bounds checking *
+  ## Make sure that x, y are in bounds.
+  ## Failure in the assumptions will case unsafe memory writes.
   if image.channels == 3:
     image.data[(image.width * y + x) * 3 + 0] = rgba.r
     image.data[(image.width * y + x) * 3 + 1] = rgba.g
@@ -247,14 +257,18 @@ proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
     raise newException(Exception,
       &"Unsupported number of channels in {$image}")
 
-proc putRgba*(image: Image, x, y: float64, rgba: ColorRGBA) {.inline.} =
+proc putRgbaUnsafe*(image: Image, x, y: float64, rgba: ColorRGBA) {.inline.} =
   ## Puts a ColorRGBA pixel back as x, y floats (does not do blending).
-  putRgba(image, int x, int y, rgba)
+  ## * No bounds checking *
+  ## Make sure that x, y are in bounds.
+  ## Failure in the assumptions will case unsafe memory writes.
+  putRgbaUnsafe(image, int x, int y, rgba)
 
-proc putRgbaSafe*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
-  ## Puts pixel onto the image or safely ignores this command if pixel is outside the image.
+proc putRgba*(image: Image, x, y: int, rgba: ColorRGBA) {.inline.} =
+  ## Puts pixel onto the image or safely ignored if pixel is outside the image.
+  ## Slower due to bounds checking.
   if image.inside(x, y):
-    image.putRgba(x, y, rgba)
+    image.putRgbaUnsafe(x, y, rgba)
 
 proc minifyBy2*(image: Image): Image =
   ## Scales the image down by an integer scale.
@@ -262,11 +276,11 @@ proc minifyBy2*(image: Image): Image =
   for y in 0 ..< result.height:
     for x in 0 ..< result.width:
       var color =
-        image.getRgba(x * 2 + 0, y * 2 + 0).color / 4.0 +
-        image.getRgba(x * 2 + 1, y * 2 + 0).color / 4.0 +
-        image.getRgba(x * 2 + 1, y * 2 + 1).color / 4.0 +
-        image.getRgba(x * 2 + 0, y * 2 + 1).color / 4.0
-      result.putRgba(x, y, color.rgba)
+        image.getRgbaUnsafe(x * 2 + 0, y * 2 + 0).color / 4.0 +
+        image.getRgbaUnsafe(x * 2 + 1, y * 2 + 0).color / 4.0 +
+        image.getRgbaUnsafe(x * 2 + 1, y * 2 + 1).color / 4.0 +
+        image.getRgbaUnsafe(x * 2 + 0, y * 2 + 1).color / 4.0
+      result.putRgbaUnsafe(x, y, color.rgba)
 
 proc minify*(image: Image, scale: int): Image =
   ## Scales the image down by an integer scale.
@@ -285,26 +299,70 @@ proc magnify*(image: Image, scale: int): Image =
   for y in 0 ..< result.height:
     for x in 0 ..< result.width:
       var rgba =
-        image.getRgba(x div scale, y div scale)
-      result.putRgba(x, y, rgba)
+        image.getRgbaUnsafe(x div scale, y div scale)
+      result.putRgbaUnsafe(x, y, rgba)
+
+proc blitUnsafe*(destImage: Image, srcImage: Image, src, dest: Rect) =
+  ## Blits rectangle from one image to the other image.
+  ## * No bounds checking *
+  ## Make sure that src and dest rect are in bounds.
+  ## Make sure that channels for images are the same.
+  ## Failure in the assumptions will case unsafe memory writes.
+  let c = destImage.channels
+  for y in 0 ..< int(dest.h):
+    let
+      srcIdx = int(src.x) + (int(src.y) + y) * srcImage.width
+      destIdx = int(dest.x) + (int(dest.y) + y) * destImage.width
+    copyMem(
+      destImage.data[destIdx*c].addr,
+      srcImage.data[srcIdx*c].addr,
+      int(dest.w) * c
+    )
 
 proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
   ## Blits rectangle from one image to the other image.
   doAssert src.w == dest.w and src.h == dest.h
-  var src = src
-  src.x = clamp(src.x, 0, srcImage.width.float32)
-  src.y = clamp(src.y, 0, srcImage.height.float32)
-  src.w = clamp(src.w, 0, srcImage.width.float32 - src.x)
-  src.h = clamp(src.h, 0, srcImage.height.float32 - src.y)
-  var dest = dest
-  dest.x = clamp(dest.x, 0, destImage.width.float32)
-  dest.y = clamp(dest.y, 0, destImage.height.float32)
-  dest.w = clamp(dest.w, 0, destImage.width.float32 - dest.x)
-  dest.h = clamp(dest.h, 0, destImage.height.float32 - dest.y)
-  for y in 0 ..< int(dest.h):
-    for x in 0 ..< int(dest.w):
-      var rgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
-      destImage.putRgba(int(dest.x) + x, int(dest.y) + y, rgba)
+  doAssert src.x >= 0 and src.x + src.w <= srcImage.width.float32
+  doAssert src.y >= 0 and src.y + src.h <= srcImage.height.float32
+
+  # See if the image hits the bounds and needs to be adjusted.
+  var
+    src = src
+    dest = dest
+  if dest.x < 0:
+    dest.w += dest.x
+    src.x -= dest.x
+    src.w += dest.x
+    dest.x = 0
+  if dest.x + dest.w > destImage.width.float32:
+    let diff = destImage.width.float32 - (dest.x + dest.w)
+    dest.w += diff
+    src.w += diff
+  if dest.y < 0:
+    dest.h += dest.y
+    src.y -= dest.y
+    src.h += dest.y
+    dest.y = 0
+  if dest.y + dest.h > destImage.height.float32:
+    let diff = destImage.height.float32 - (dest.y + dest.h)
+    dest.h += diff
+    src.h += diff
+
+  # See if image is entirely outside the bounds:
+  if dest.x + dest.w < 0 or dest.x > destImage.width.float32:
+    return
+  if dest.y + dest.h < 0 or dest.y > destImage.height.float32:
+    return
+
+  if destImage.channels == srcImage.channels:
+    # Faster path using copyMem:
+    blitUnsafe(destImage, srcImage, src, dest)
+  else:
+    # Slower path due to color channel conversion.
+    for y in 0 ..< int(dest.h):
+      for x in 0 ..< int(dest.w):
+        var rgba = srcImage.getRgbaUnsafe(int(src.x) + x, int(src.y) + y)
+        destImage.putRgbaUnsafe(int(dest.x) + x, int(dest.y) + y, rgba)
 
 proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
   ## Blits rectangle from one image to the other image.
@@ -321,16 +379,18 @@ proc mix(srcRgba, destRgba: ColorRGBA): ColorRGBA =
   result.b = uint8(float(destRgba.b) * (1 - a) + float(srcRgba.b) * a)
   result.a = uint8(clamp(float(destRgba.a) + float(srcRgba.a), 0, 255))
 
+{.pop.}
+
 proc blitWithAlpha*(destImage: Image, srcImage: Image, src, dest: Rect) =
   ## Blits rectangle from one image to the other image.
   assert src.w == dest.w and src.h == dest.h
   for y in 0 ..< int(src.h):
     for x in 0 ..< int(src.w):
       let
-        srcRgba = srcImage.getRgba(int(src.x) + x, int(src.y) + y)
-        destRgba = destImage.getRgbaSafe(int(dest.x) + x, int(dest.y) + y)
+        srcRgba = srcImage.getRgbaUnsafe(int(src.x) + x, int(src.y) + y)
+        destRgba = destImage.getRgba(int(dest.x) + x, int(dest.y) + y)
         rgba = mix(srcRgba, destRgba)
-      destImage.putRgbaSafe(int(dest.x) + x, int(dest.y) + y, rgba)
+      destImage.putRgba(int(dest.x) + x, int(dest.y) + y, rgba)
 
 proc blitWithMask*(
     destImage: Image,
@@ -348,17 +408,17 @@ proc blitWithMask*(
         xDest = int(dest.x) + x
         yDest = int(dest.y) + y
       if destImage.inside(xDest, yDest) and srcImage.inside(xSrc, ySrc):
-        var srcRgba = srcImage.getRgba(xSrc, ySrc)
+        var srcRgba = srcImage.getRgbaUnsafe(xSrc, ySrc)
         if srcRgba.a == uint8(255):
-          destImage.putRgba(xDest, yDest, rgba)
+          destImage.putRgbaUnsafe(xDest, yDest, rgba)
         elif srcRgba.a > uint8(0):
-          var destRgba = destImage.getRgba(xDest, yDest)
+          var destRgba = destImage.getRgbaUnsafe(xDest, yDest)
           let a = float(srcRgba.a)/255.0
           destRgba.r = uint8(float(destRgba.r) * (1-a) + float(rgba.r) * a)
           destRgba.g = uint8(float(destRgba.g) * (1-a) + float(rgba.g) * a)
           destRgba.b = uint8(float(destRgba.b) * (1-a) + float(rgba.b) * a)
           destRgba.a = 255
-          destImage.putRgba(xDest, yDest, destRgba)
+          destImage.putRgbaUnsafe(xDest, yDest, destRgba)
 
 proc computeBounds(
   destImage, srcImage: Image, mat: Mat4, matInv: Mat4
@@ -393,7 +453,7 @@ proc getSubImage*(image: Image, x, y, w, h: int): Image =
   result = newImage(w, h, image.channels)
   for y2 in 0 ..< h:
     for x2 in 0 ..< w:
-      result.putRgba(x2, y2, image.getRgba(x2 + x, y2 + y))
+      result.putRgbaUnsafe(x2, y2, image.getRgbaUnsafe(x2 + x, y2 + y))
 
 proc trim*(image: Image): Image =
   ## Trims the transparent (alpha=0) border around the image.
@@ -404,7 +464,7 @@ proc trim*(image: Image): Image =
     maxY = 0
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
-      var rgba = image.getRgba(x, y)
+      var rgba = image.getRgbaUnsafe(x, y)
       if rgba.a != 0:
         minX = min(x, minX)
         maxX = max(x, maxX)
@@ -417,17 +477,17 @@ proc flipHorizontal*(image: Image): Image =
   result = newImage(image.width, image.height, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
-      let rgba = image.getRgba(x, y)
+      let rgba = image.getRgbaUnsafe(x, y)
       #echo image.width - x
-      result.putRgba(image.width - x - 1, y, rgba)
+      result.putRgbaUnsafe(image.width - x - 1, y, rgba)
 
 proc flipVertical*(image: Image): Image =
   ## Flips the image around the X axis.
   result = newImage(image.width, image.height, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
-      let rgba = image.getRgba(x, y)
-      result.putRgba(x, image.height - y - 1, rgba)
+      let rgba = image.getRgbaUnsafe(x, y)
+      result.putRgbaUnsafe(x, image.height - y - 1, rgba)
 
 proc blit*(destImage, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending.
@@ -441,8 +501,8 @@ proc blit*(destImage, srcImage: Image, mat: Mat4) =
       let destV = vec3(float32(x) + 0.5, float32(y) + 0.5, 0)
       let srcV = roundPixelVec(matInv * destV)
       if srcImage.inside(int srcV.x, int srcV.y):
-        var rgba = srcImage.getRgba(int srcV.x, int srcV.y)
-        destImage.putRgba(x, y, rgba)
+        var rgba = srcImage.getRgbaUnsafe(int srcV.x, int srcV.y)
+        destImage.putRgbaUnsafe(x, y, rgba)
 
 proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending.
@@ -473,15 +533,15 @@ proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
       if srcImage.inside(int srcV.x, int srcV.y):
         var rgba = srcImage.getRgbaSmooth(srcV.x, srcV.y)
         if rgba.a == uint8(255):
-          destImage.putRgba(x, y, rgba)
+          destImage.putRgbaUnsafe(x, y, rgba)
         elif rgba.a > uint8(0):
-          let destRgba = destImage.getRgba(x, y)
+          let destRgba = destImage.getRgbaUnsafe(x, y)
           let a = float(rgba.a) / 255.0
           rgba.r = uint8(float(destRgba.r) * (1 - a) + float(rgba.r) * a)
           rgba.g = uint8(float(destRgba.g) * (1 - a) + float(rgba.g) * a)
           rgba.b = uint8(float(destRgba.b) * (1 - a) + float(rgba.b) * a)
           rgba.a = 255
-          destImage.putRgba(x, y, rgba)
+          destImage.putRgbaUnsafe(x, y, rgba)
 
 proc fill*(image: Image, rgba: ColorRgba) =
   ## Fills the image with a solid color.
@@ -520,7 +580,7 @@ proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
     if dx == 0:
       break
     let y = at.y + dy * (x - at.x) / dx
-    image.putRgbaSafe(int x, int y, rgba)
+    image.putRgba(int x, int y, rgba)
     if at.x < to.x:
       x += 1
       if x > to.x:
@@ -535,7 +595,7 @@ proc line*(image: Image, at, to: Vec2, rgba: ColorRGBA) =
     if dy == 0:
       break
     let x = at.x + dx * (y - at.y) / dy
-    image.putRgbaSafe(int x, int y, rgba)
+    image.putRgba(int x, int y, rgba)
     if at.y < to.y:
       y += 1
       if y > to.y:
@@ -554,7 +614,7 @@ proc fillRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
     maxY = min(int(rect.y + rect.h), image.height)
   for y in minY ..< maxY:
     for x in minX ..< maxX:
-      image.putRgba(x, y, rgba)
+      image.putRgbaUnsafe(x, y, rgba)
 
 proc strokeRect*(image: Image, rect: Rect, rgba: ColorRGBA) =
   ## Draws a rectangle borders only.
@@ -579,7 +639,7 @@ proc fillCircle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
         pixelPos = vec2(float x, float y) + vec2(0.5, 0.5)
         pixelDist = pixelPos.dist(pos)
       if pixelDist < radius - sqrt(0.5):
-        image.putRgba(x, y, rgba)
+        image.putRgbaUnsafe(x, y, rgba)
       elif pixelDist < radius + sqrt(0.5):
         var touch = 0
         const n = 5
@@ -590,7 +650,7 @@ proc fillCircle*(image: Image, pos: Vec2, radius: float, rgba: ColorRGBA) =
               inc touch
         var rgbaAA = rgba
         rgbaAA.a = uint8(float(touch) * 255.0 / (n * n))
-        image.putRgba(x, y, rgbaAA)
+        image.putRgbaUnsafe(x, y, rgbaAA)
 
 proc strokeCircle*(
   image: Image, pos: Vec2, radius, border: float, rgba: ColorRGBA
@@ -619,7 +679,7 @@ proc strokeCircle*(
               inc touch
         var rgbaAA = rgba
         rgbaAA.a = uint8(float(touch) * 255.0 / (n * n))
-        image.putRgba(x, y, rgbaAA)
+        image.putRgbaUnsafe(x, y, rgbaAA)
 
 proc fillRoundedRect*(
   image: Image, rect: Rect, radius: float, rgba: ColorRGBA
@@ -676,16 +736,16 @@ proc rotate90Degrees*(image: Image): Image =
   result = newImage(image.height, image.width, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
-      var rgba = image.getRgba(x, y)
-      result.putRgba(image.height - y - 1, x, rgba)
+      var rgba = image.getRgbaUnsafe(x, y)
+      result.putRgbaUnsafe(image.height - y - 1, x, rgba)
 
 proc rotateNeg90Degrees*(image: Image): Image =
   ## Rotates the image anti-clockwise.
   result = newImage(image.height, image.width, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
-      var rgba = image.getRgba(x, y)
-      result.putRgba(y, image.width - x - 1, rgba)
+      var rgba = image.getRgbaUnsafe(x, y)
+      result.putRgbaUnsafe(y, image.width - x - 1, rgba)
 
 proc shearX*(image: Image, shear: float): Image =
   ## Shears the image horizontally; resizes to fit.
@@ -702,7 +762,7 @@ proc shearX*(image: Image, shear: float): Image =
     var oLeft: ColorRGBA
     for x in 1 ..< image.width:
       var
-        pixel = image.getRgba(x, y)
+        pixel = image.getRgbaUnsafe(x, y)
         pixelLeft = pixel * fSkew
       # for some reason this doesn't work w/ +- operators
       # pixel = pixel - pixelLeft + oLeft
@@ -710,9 +770,9 @@ proc shearX*(image: Image, shear: float): Image =
       pixel.g = pixel.g - pixelLeft.g + oLeft.g
       pixel.b = pixel.b - pixelLeft.b + oLeft.b
       pixel.a = pixel.a - pixelLeft.a + oLeft.a
-      result.putRgba(offsetAdd + x + iSkew, y, pixel)
+      result.putRgbaUnsafe(offsetAdd + x + iSkew, y, pixel)
       oLeft = pixelLeft
-    result.putRgba(offsetAdd + iSkew + 1, y, rgba(0, 0, 0, 0))
+    result.putRgbaUnsafe(offsetAdd + iSkew + 1, y, rgba(0, 0, 0, 0))
 
 proc shearY*(image: Image, shear: float): Image =
   ## Shears the image vertically; resizes to fit.
@@ -729,7 +789,7 @@ proc shearY*(image: Image, shear: float): Image =
     var oLeft: ColorRGBA
     for y in 1 ..< image.height:
       var
-        pixel = image.getRgba(x, y)
+        pixel = image.getRgbaUnsafe(x, y)
         pixelLeft = pixel * fSkew
       # for some reason this doesn't work w/ +- operators
       # pixel = pixel - pixelLeft + oLeft
@@ -737,9 +797,9 @@ proc shearY*(image: Image, shear: float): Image =
       pixel.g = pixel.g - pixelLeft.g + oLeft.g
       pixel.b = pixel.b - pixelLeft.b + oLeft.b
       pixel.a = pixel.a - pixelLeft.a + oLeft.a
-      result.putRgba(x, offsetAdd + y + iSkew, pixel)
+      result.putRgbaUnsafe(x, offsetAdd + y + iSkew, pixel)
       oLeft = pixelLeft
-    result.putRgba(x, offsetAdd + iSkew + 1, rgba(0, 0, 0, 0))
+    result.putRgbaUnsafe(x, offsetAdd + iSkew + 1, rgba(0, 0, 0, 0))
 
 proc rotate*(image: Image, angle: float): Image =
   ## Rotates the image by given angle (in degrees)
@@ -786,9 +846,9 @@ proc removeAlpha*(image: Image) =
   ## Setting it to 255 everywhere.
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
-      var rgba = image.getRgba(x, y)
+      var rgba = image.getRgbaUnsafe(x, y)
       rgba.a = 255
-      image.putRgba(x, y, rgba)
+      image.putRgbaUnsafe(x, y, rgba)
 
 proc alphaBleed*(image: Image) =
   ## PNG saves space by encoding alpha = 0 areas as black however
@@ -811,17 +871,17 @@ proc alphaBleed*(image: Image) =
             sumG += int rgba.g
             sumB += int rgba.b
             count += 1
-        use image.getRgba(x * 2 + 0, y * 2 + 0)
-        use image.getRgba(x * 2 + 1, y * 2 + 0)
-        use image.getRgba(x * 2 + 1, y * 2 + 1)
-        use image.getRgba(x * 2 + 0, y * 2 + 1)
+        use image.getRgbaUnsafe(x * 2 + 0, y * 2 + 0)
+        use image.getRgbaUnsafe(x * 2 + 1, y * 2 + 0)
+        use image.getRgbaUnsafe(x * 2 + 1, y * 2 + 1)
+        use image.getRgbaUnsafe(x * 2 + 0, y * 2 + 1)
         if count > 0:
           var rgba: ColorRGBA
           rgba.r = uint8(sumR div count)
           rgba.g = uint8(sumG div count)
           rgba.b = uint8(sumB div count)
           rgba.a = 255
-          result.putRgba(x, y, rgba)
+          result.putRgbaUnsafe(x, y, rgba)
 
   # scale image down in layers, only using opaque pixels
   var
@@ -834,7 +894,7 @@ proc alphaBleed*(image: Image) =
   # walk over all transparent pixels, going up layers to find best colors
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
-      var rgba = image.getRgba(x, y)
+      var rgba = image.getRgbaUnsafe(x, y)
       if rgba.a == 0:
         var
           xs = x
@@ -842,11 +902,11 @@ proc alphaBleed*(image: Image) =
         for l in layers:
           xs = min(xs div 2, l.width - 1)
           ys = min(ys div 2, l.height - 1)
-          rgba = l.getRgba(xs, ys)
+          rgba = l.getRgbaUnsafe(xs, ys)
           if rgba.a > 0.uint8:
             break
         rgba.a = 0
-      image.putRgba(x, y, rgba)
+      image.putRgbaUnsafe(x, y, rgba)
 
 proc blur*(image: Image, xBlur: int, yBlur: int): Image =
   ## Blurs the image by x and y directions.
@@ -863,7 +923,7 @@ proc blur*(image: Image, xBlur: int, yBlur: int): Image =
       for x in 0 ..< image.width:
         var c: Color
         for xb in 0 .. xBlur:
-          let c2 = image.getRgbaSafe(x + xb - xBlur div 2, y).color
+          let c2 = image.getRgba(x + xb - xBlur div 2, y).color
           c.r += c2.r
           c.g += c2.g
           c.b += c2.b
@@ -875,7 +935,7 @@ proc blur*(image: Image, xBlur: int, yBlur: int): Image =
         if c.a != 0.0 and c.rgba.r == 0:
           echo c
           echo c.rgba
-        blurX.putRgba(x, y, c.rgba)
+        blurX.putRgbaUnsafe(x, y, c.rgba)
   else:
     blurX = image
 
@@ -885,7 +945,7 @@ proc blur*(image: Image, xBlur: int, yBlur: int): Image =
       for x in 0 ..< image.width:
         var c: Color
         for yb in 0 .. yBlur:
-          let c2 = blurX.getRgbaSafe(x, y + yb - yBlur div 2).color
+          let c2 = blurX.getRgba(x, y + yb - yBlur div 2).color
           c.r += c2.r
           c.g += c2.g
           c.b += c2.b
@@ -897,7 +957,7 @@ proc blur*(image: Image, xBlur: int, yBlur: int): Image =
         if c.a != 0.0 and c.rgba.r == 0:
           echo c
           echo c.rgba
-        blurY.putRgba(x, y, c.rgba)
+        blurY.putRgbaUnsafe(x, y, c.rgba)
   else:
     blurY = blurX
 
@@ -927,14 +987,14 @@ proc outlineBorder*(image: Image, borderPx: int): Image =
       var filled = false
       for bx in -borderPx .. borderPx:
         for by in -borderPx .. borderPx:
-          var rgba = image.getRgbaSafe(x + bx - borderPx, y - by - borderPx)
+          var rgba = image.getRgba(x + bx - borderPx, y - by - borderPx)
           if rgba.a > 0.uint8:
             filled = true
             break
         if filled:
           break
       if filled:
-        result.putRgba(x, y, rgba(255, 255, 255, 255))
+        result.putRgbaUnsafe(x, y, rgba(255, 255, 255, 255))
 
 
 func width*(flippy: Flippy): int =
