@@ -45,12 +45,20 @@ Image = ref object
  data*: seq[uint8]
 ```
 
+## **type** Flippy
+
+
+```nim
+Flippy = object
+ mipmaps*: seq[Image]
+```
+
 ## **proc** `$`
 
 Display the image path, size and channels.
 
 ```nim
-proc `$`(image: Image): string
+proc `$`(image: Image): string {.raises: [ValueError].}
 ```
 
 ## **proc** newImage
@@ -90,7 +98,7 @@ proc copy(image: Image): Image
 Saves a png image.
 
 ```nim
-proc save(image: Image) {.raises: [Exception], tags: [RootEffect, WriteIOEffect].}
+proc save(image: Image) {.raises: [Exception], tags: [WriteIOEffect, RootEffect].}
 ```
 
 ## **proc** save
@@ -98,7 +106,7 @@ proc save(image: Image) {.raises: [Exception], tags: [RootEffect, WriteIOEffect]
 Sets image path and save the image.
 
 ```nim
-proc save(image: Image; filePath: string) {.raises: [Exception], tags: [RootEffect, WriteIOEffect].}
+proc save(image: Image; filePath: string) {.raises: [Exception], tags: [WriteIOEffect, RootEffect].}
 ```
 
 ## **proc** inside
@@ -109,52 +117,139 @@ Returns true if (x, y) is inside the image.
 proc inside(image: Image; x, y: int): bool {.inline.}
 ```
 
-## **proc** getRgba
+## **proc** getRgbaUnsafe
 
 Gets a color from (x, y) coordinates.
+ * No bounds checking *
+
+<p>Make sure that x, y are in bounds. Failure in the assumptions will case unsafe memory reads.</p>
+
+```nim
+proc getRgbaUnsafe(image: Image; x, y: int): ColorRGBA {.inline, raises: [Exception, ValueError].}
+```
+
+## **proc** getRgbaUnsafe
+
+Gets a pixel as (x, y) floats.
+ * No bounds checking *
+
+<p>Make sure that x, y are in bounds. Failure in the assumptions will case unsafe memory reads.</p>
+
+```nim
+proc getRgbaUnsafe(image: Image; x, y: float64): ColorRGBA {.inline, raises: [Exception, ValueError].}
+```
+
+## **proc** getRgba
+
+Gets a pixel at (x, y) or returns transparent black if outside of bounds. Slower due to bounds checking.
 
 ```nim
 proc getRgba(image: Image; x, y: int): ColorRGBA {.inline, raises: [Exception, ValueError].}
 ```
 
-## **proc** getRgba
+## **proc** getRgbaSmooth
 
 Gets a pixel as (x, y) floats.
 
 ```nim
-proc getRgba(image: Image; x, y: float64): ColorRGBA {.inline, raises: [Exception, ValueError].}
+proc getRgbaSmooth(image: Image; x, y: float64): ColorRGBA {.inline, raises: [Exception, ValueError].}
 ```
 
-## **proc** getRgbaSafe
+## **proc** putRgbaUnsafe
 
-Gets a pixel as (x, y) but returns transparency if next sampled outside.
+Puts a ColorRGBA pixel back.
+ * No bounds checking *
+
+<p>Make sure that x, y are in bounds. Failure in the assumptions will case unsafe memory writes.</p>
 
 ```nim
-proc getRgbaSafe(image: Image; x, y: int): ColorRGBA {.inline, raises: [Exception, ValueError].}
+proc putRgbaUnsafe(image: Image; x, y: int; rgba: ColorRGBA) {.inline, raises: [Exception, ValueError].}
+```
+
+## **proc** putRgbaUnsafe
+
+Puts a ColorRGBA pixel back as x, y floats (does not do blending).
+ * No bounds checking *
+
+<p>Make sure that x, y are in bounds. Failure in the assumptions will case unsafe memory writes.</p>
+
+```nim
+proc putRgbaUnsafe(image: Image; x, y: float64; rgba: ColorRGBA) {.inline, raises: [Exception, ValueError].}
 ```
 
 ## **proc** putRgba
 
-Puts a ColorRGBA pixel back.
+Puts pixel onto the image or safely ignored if pixel is outside the image. Slower due to bounds checking.
 
 ```nim
 proc putRgba(image: Image; x, y: int; rgba: ColorRGBA) {.inline, raises: [Exception, ValueError].}
 ```
 
-## **proc** putRgba
+## **proc** minifyBy2
 
-Puts a ColorRGBA pixel back as x, y floats (does not do blending).
+Scales the image down by an integer scale.
 
 ```nim
-proc putRgba(image: Image; x, y: float64; rgba: ColorRGBA) {.inline, raises: [Exception, ValueError].}
+proc minifyBy2(image: Image): Image {.raises: [Exception, ValueError].}
 ```
 
-## **proc** putRgbaSafe
+## **proc** minify
 
-Puts pixel onto the image or safely ignores this command if pixel is outside the image.
+Scales the image down by an integer scale.
 
 ```nim
-proc putRgbaSafe(image: Image; x, y: int; rgba: ColorRGBA) {.inline, raises: [Exception, ValueError].}
+proc minify(image: Image; scale: int): Image {.raises: [Exception, ValueError].}
+```
+
+## **proc** magnify
+
+Scales image image up by an integer scale.
+
+```nim
+proc magnify(image: Image; scale: int): Image {.raises: [Exception, ValueError].}
+```
+
+## **proc** blitUnsafe
+
+Blits rectangle from one image to the other image.
+ * No bounds checking *
+
+<p>Make sure that src and dest rect are in bounds. Make sure that channels for images are the same. Failure in the assumptions will case unsafe memory writes.</p>
+
+```nim
+proc blitUnsafe(destImage: Image; srcImage: Image; src, dest: Rect)
+```
+
+## **proc** blit
+
+Blits rectangle from one image to the other image.
+
+```nim
+proc blit(destImage: Image; srcImage: Image; src, dest: Rect) {.raises: [Exception, ValueError].}
+```
+
+## **proc** blit
+
+Blits rectangle from one image to the other image.
+
+```nim
+proc blit(destImage: Image; srcImage: Image; pos: Vec2) {.raises: [Exception, ValueError].}
+```
+
+## **proc** blitWithAlpha
+
+Blits rectangle from one image to the other image.
+
+```nim
+proc blitWithAlpha(destImage: Image; srcImage: Image; src, dest: Rect) {.raises: [Exception, ValueError].}
+```
+
+## **proc** blitWithMask
+
+Blits rectangle from one image to the other image with masking color.
+
+```nim
+proc blitWithMask(destImage: Image; srcImage: Image; src, dest: Rect; rgba: ColorRGBA) {.raises: [Exception, ValueError].}
 ```
 
 ## **proc** getSubImage
@@ -163,6 +258,14 @@ Gets a sub image of the main image.
 
 ```nim
 proc getSubImage(image: Image; x, y, w, h: int): Image {.raises: [Exception, ValueError], tags: [].}
+```
+
+## **proc** trim
+
+Trims the transparent (alpha=0) border around the image.
+
+```nim
+proc trim(image: Image): Image {.raises: [Exception, ValueError].}
 ```
 
 ## **proc** flipHorizontal
@@ -183,42 +286,10 @@ proc flipVertical(image: Image): Image {.raises: [Exception, ValueError].}
 
 ## **proc** blit
 
-Blits rectangle from one image to the other image.
-
-```nim
-proc blit(destImage, srcImage: Image; pos: Vec2) {.raises: [Exception, ValueError], tags: [].}
-```
-
-## **proc** blit
-
-Blits rectangle from one image to the other image.
-
-```nim
-proc blit(destImage, srcImage: Image; src, dest: Rect) {.raises: [Exception, ValueError].}
-```
-
-## **proc** blit
-
 Blits one image onto another using matrix with alpha blending.
 
 ```nim
 proc blit(destImage, srcImage: Image; mat: Mat4) {.raises: [Exception, ValueError], tags: [].}
-```
-
-## **proc** blitWithMask
-
-Blits rectangle from one image to the other image with masking color.
-
-```nim
-proc blitWithMask(destImage, srcImage: Image; src, dest: Rect; rgba: ColorRGBA) {.raises: [Exception, ValueError].}
-```
-
-## **proc** blitWithMask
-
-Blits one image onto another using matrix with masking color.
-
-```nim
-proc blitWithMask(destImage, srcImage: Image; mat: Mat4; rgba: ColorRGBA) {.raises: [Exception, ValueError].}
 ```
 
 ## **proc** blitWithAlpha
@@ -226,7 +297,7 @@ proc blitWithMask(destImage, srcImage: Image; mat: Mat4; rgba: ColorRGBA) {.rais
 Blits one image onto another using matrix with alpha blending.
 
 ```nim
-proc blitWithAlpha(destImage, srcImage: Image; mat: Mat4) {.raises: [Exception, ValueError].}
+proc blitWithAlpha(destImage: Image; srcImage: Image; mat: Mat4) {.raises: [Exception, ValueError].}
 ```
 
 ## **proc** fill
@@ -261,20 +332,20 @@ Draws a rectangle borders only.
 proc strokeRect(image: Image; rect: Rect; rgba: ColorRGBA) {.raises: [Exception, ValueError].}
 ```
 
-## **proc** fillCirle
+## **proc** fillCircle
 
 Draws a filled circle with antialiased edges.
 
 ```nim
-proc fillCirle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA) {.raises: [Exception, ValueError].}
+proc fillCircle(image: Image; pos: Vec2; radius: float; rgba: ColorRGBA) {.raises: [Exception, ValueError].}
 ```
 
-## **proc** strokeCirle
+## **proc** strokeCircle
 
 Draws a border of circle with antialiased edges.
 
 ```nim
-proc strokeCirle(image: Image; pos: Vec2; radius, border: float; rgba: ColorRGBA) {.raises: [Exception, ValueError].}
+proc strokeCircle(image: Image; pos: Vec2; radius, border: float; rgba: ColorRGBA) {.raises: [Exception, ValueError].}
 ```
 
 ## **proc** fillRoundedRect
@@ -301,28 +372,20 @@ Draws a 9-patch
 proc ninePatch(image: Image; rect: Rect; radius, border: float; fill, stroke: ColorRGBA) {.raises: [Exception, ValueError].}
 ```
 
-## **proc** minifyBy2
+## **proc** rotate90Degrees
 
-Scales the image down by an integer scale.
+Rotates the image clockwise.
 
 ```nim
-proc minifyBy2(image: Image): Image {.raises: [Exception, ValueError].}
+proc rotate90Degrees(image: Image): Image {.raises: [Exception, ValueError].}
 ```
 
-## **proc** minify
+## **proc** rotateNeg90Degrees
 
-Scales the image down by an integer scale.
-
-```nim
-proc minify(image: Image; scale: int): Image {.raises: [Exception, ValueError].}
-```
-
-## **proc** magnify
-
-Scales image image up by an integer scale.
+Rotates the image anti-clockwise.
 
 ```nim
-proc magnify(image: Image; scale: int): Image {.raises: [Exception, ValueError].}
+proc rotateNeg90Degrees(image: Image): Image {.raises: [Exception, ValueError], tags: [].}
 ```
 
 ## **proc** shearX
@@ -339,22 +402,6 @@ Shears the image vertically; resizes to fit.
 
 ```nim
 proc shearY(image: Image; shear: float): Image {.raises: [Exception, ValueError], tags: [].}
-```
-
-## **proc** rotate90Degrees
-
-Rotates the image clockwise.
-
-```nim
-proc rotate90Degrees(image: Image): Image {.raises: [Exception, ValueError].}
-```
-
-## **proc** rotateNeg90Degrees
-
-Rotates the image anti-clockwise.
-
-```nim
-proc rotateNeg90Degrees(image: Image): Image {.raises: [Exception, ValueError], tags: [].}
 ```
 
 ## **proc** rotate
@@ -387,4 +434,56 @@ Blurs the image by x and y directions.
 
 ```nim
 proc blur(image: Image; xBlur: int; yBlur: int): Image {.raises: [Exception, ValueError].}
+```
+
+## **proc** resize
+
+
+```nim
+proc resize(srcImage: Image; width, height: int): Image {.raises: [Exception, ValueError].}
+```
+
+## **proc** outlineBorder
+
+Adds n pixel border around alpha parts of the image.
+
+```nim
+proc outlineBorder(image: Image; borderPx: int): Image {.raises: [Exception, ValueError].}
+```
+
+## **func** width
+
+
+```nim
+func width(flippy: Flippy): int
+```
+
+## **func** height
+
+
+```nim
+func height(flippy: Flippy): int
+```
+
+## **proc** save
+
+Flippy is a special file format that is fast to load and save with mip maps.
+
+```nim
+proc save(flippy: Flippy; filePath: string) {.raises: [Exception, IOError, OSError, SnappyException], tags: [WriteIOEffect].}
+```
+
+## **proc** pngToFlippy
+
+
+```nim
+proc pngToFlippy(pngPath, flippyPath: string) {.raises: [Exception, ValueError, IOError, OSError, SnappyException], tags: [ReadIOEffect, RootEffect, WriteIOEffect].}
+```
+
+## **proc** loadFlippy
+
+Flippy is a special file format that is fast to load and save with mip maps.
+
+```nim
+proc loadFlippy(filePath: string): Flippy {.raises: [Exception, IOError, OSError, ValueError, SnappyException], tags: [WriteIOEffect, ReadIOEffect].}
 ```
