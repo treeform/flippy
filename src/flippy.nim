@@ -325,6 +325,13 @@ proc blitUnsafe*(destImage: Image, srcImage: Image, src, dest: Rect) =
       int(dest.w) * c
     )
 
+proc blitS*(destImage: Image, srcImage: Image, src, dest: Rect) =
+  ## Slow blit but safe and accurate.
+  for y in int(src.y) ..< int(src.h):
+    for x in int(src.x) ..< int(src.w):
+      var rgba = srcImage.getRgba(x, y)
+      destImage.putRgba(int(dest.x) + x, int(dest.y) + y, rgba)
+
 proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
   ## Blits rectangle from one image to the other image.
   doAssert src.w == dest.w and src.h == dest.h
@@ -713,20 +720,21 @@ proc strokeRoundedRect*(
     image.strokeRect(rect(
       rect.x + f,
       rect.y + f,
-      rect.w - f*2,
-      rect.h - f*2,
+      rect.w - f * 2,
+      rect.h - f * 2,
     ), rgba)
-  let borderWidth = radius + border / 2
+  let borderWidth = (radius + border / 2)
   let borderWidthPx = int ceil(borderWidth)
   var corner = newImage(borderWidthPx, borderWidthPx, 4)
   corner.strokeCircle(vec2(borderWidth, borderWidth), radius, border, rgba)
-  image.blit(corner, vec2(0, 0))
+  let s = borderWidth.ceil
+  image.blit(corner, vec2(0, 0)) # NW
   corner = corner.flipHorizontal()
-  image.blit(corner, vec2(rect.w - borderWidth, 0)) # NE
+  image.blit(corner, vec2(rect.w - s, 0)) # NE
   corner = corner.flipVertical()
-  image.blit(corner, vec2(rect.w - borderWidth, rect.h - borderWidth)) # SE
+  image.blit(corner, vec2(rect.w - s, rect.h - s)) # SE
   corner = corner.flipHorizontal()
-  image.blit(corner, vec2(0, rect.h - borderWidth)) # SW
+  image.blit(corner, vec2(0, rect.h - s)) # SW
 
 proc ninePatch*(
   image: Image, rect: Rect, radius, border: float, fill, stroke: ColorRGBA

@@ -3,6 +3,13 @@ import chroma, flippy, os, osproc, vmath
 setCurrentDir(getCurrentDir() / "tests")
 
 block:
+  echo "# Test strokeRoundedRect 1px"
+  let image = newImage(100, 100, 4)
+  image.strokeRoundedRect(rect = rect(0, 0, 100, 100),
+    radius = 8, border = 1, rgba = rgba(255, 255, 255, 255))
+  image.save("strokeRoundedRect1px.png")
+
+block:
   echo "# Simple blit around edges"
 
   var mainImage = newImage(60, 60, 4)
