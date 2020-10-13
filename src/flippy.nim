@@ -491,7 +491,6 @@ proc flipHorizontal*(image: Image): Image =
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
       let rgba = image.getRgbaUnsafe(x, y)
-      #echo image.width - x
       result.putRgbaUnsafe(image.width - x - 1, y, rgba)
 
 proc flipVertical*(image: Image): Image =
@@ -944,9 +943,6 @@ proc blur*(image: Image, xBlur: int, yBlur: int): Image =
         c.g = c.g / (xBlur.float + 1)
         c.b = c.b / (xBlur.float + 1)
         c.a = c.a / (xBlur.float + 1)
-        if c.a != 0.0 and c.rgba.r == 0:
-          echo c
-          echo c.rgba
         blurX.putRgbaUnsafe(x, y, c.rgba)
   else:
     blurX = image
@@ -966,9 +962,6 @@ proc blur*(image: Image, xBlur: int, yBlur: int): Image =
         c.g = c.g / (yBlur.float + 1)
         c.b = c.b / (yBlur.float + 1)
         c.a = c.a / (yBlur.float + 1)
-        if c.a != 0.0 and c.rgba.r == 0:
-          echo c
-          echo c.rgba
         blurY.putRgbaUnsafe(x, y, c.rgba)
   else:
     blurY = blurX
