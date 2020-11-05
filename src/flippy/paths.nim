@@ -24,6 +24,17 @@ type
 proc newPath*(): Path =
   result = Path()
 
+proc commandNumbers(kind: PathCommandKind): int =
+  ## How many numbers does a command take:
+  case kind:
+    of Start, End: 0
+    of Move, Line, RMove, RLine: 2
+    of HLine, VLine, RHLine, RVLine: 1
+    of Cubic, RCubic: 6
+    of SCurve, RSCurve, Quad, RQuad: 4
+    of TQuad, RTQuad: 2
+    of Arc, RArc: 7
+
 proc parsePath*(path: string): Path =
   ## Converts a SVG style path into seq of commands.
   result = newPath()
@@ -39,8 +50,18 @@ proc parsePath*(path: string): Path =
   template finishCommand() =
     finishDigit()
     if command != Start:
-      result.commands.add PathCommand(kind: command, numbers: numbers)
-      numbers = newSeq[float32]()
+      let num = commandNumbers(command)
+      if num > 0:
+        assert numbers.len mod num == 0
+        for batch in 0 ..< numbers.len div num:
+          result.commands.add PathCommand(
+            kind: command,
+            numbers: numbers[batch*num ..< (batch+1)*num]
+          )
+        numbers.setLen(0)
+      else:
+        assert numbers.len == 0
+        result.commands.add PathCommand(kind: command)
 
   for c in path:
     case c:
@@ -107,6 +128,9 @@ proc parsePath*(path: string): Path =
         finishCommand()
         command = End
       # Punctuation
+      of '-':
+        finishDigit()
+        number = $c
       of ' ', ',', '\r', '\n', '\t':
         finishDigit()
       else:
@@ -129,6 +153,8 @@ proc `$`*(path: Path): string =
         result.add "A"
       of Line:
         result.add "L"
+      of End:
+        result.add "Z"
       else:
         result.add "?"
     for number in command.numbers:
@@ -241,8 +267,8 @@ proc commandsToPolygon*(commands: seq[PathCommand]): seq[Vec2] =
   proc drawLine(at, to: Vec2) =
     if at - to != vec2(0, 0):
       # Don't add any 0 length lines.
-      if polygon.len == 0 or polygon[^1] != at:
-        polygon.add(at)
+      #if polygon.len == 0 or polygon[^1] != at:
+      polygon.add(at)
       polygon.add(to)
 
   proc getCurvePoint(points: seq[Vec2], t: float32): Vec2 =
@@ -357,11 +383,12 @@ proc commandsToPolygon*(commands: seq[PathCommand]): seq[Vec2] =
           command.numbers[5],
           command.numbers[6],
         )
-        let steps = int(abs(arc.delta)/PI*180/10)
+        let steps = int(abs(arc.delta)/PI*180/5)
         let step = arc.delta / steps.float32
         var a = arc.theta
         var rotMat = rotationMat3(arc.rotation)
         for i in 0 .. steps:
+          polygon.add(polygon[^1])
           polygon.add(rotMat * vec2(
             cos(a)*arc.rx,
             sin(a)*arc.ry) + vec2(arc.cx, arc.cy)
@@ -371,11 +398,11 @@ proc commandsToPolygon*(commands: seq[PathCommand]): seq[Vec2] =
 
       of End:
         assert command.numbers.len == 0
-        if prevCommand == Quad or prevCommand == TQuad:
-          if at != start:
-            drawQuad(at, ctr, start)
-        else:
-          drawLine(at, start)
+        if at != start:
+          if prevCommand == Quad or prevCommand == TQuad:
+              drawQuad(at, ctr, start)
+          else:
+            drawLine(at, start)
         at = start
 
       of RMove:
@@ -452,10 +479,15 @@ proc commandsToPolygon*(commands: seq[PathCommand]): seq[Vec2] =
 
   return polygon
 
+# iterator zipwise[T](s: seq[T]): (T, T) =
+#   ## Return elements in pairs: (1st, 2nd), (2nd, 3rd) ... (Nth, last).
+#   for i in 0 ..< s.len - 1:
+#     yield(s[i], s[i + 1])
+
 iterator zipwise[T](s: seq[T]): (T, T) =
-  ## Return elements in pairs: (1st, 2nd), (2nd, 3rd) ... (Nth, last).
-  for i in 0 ..< s.len - 1:
-    yield(s[i], s[i + 1])
+  ## Return elements in pairs: (1st, 2nd), (3rd, 4th) ... (Nth, last).
+  for i in 0 ..< s.len div 2:
+    yield(s[i*2 + 0], s[i*2 + 1])
 
 proc intersects*(a, b: Segment, at: var Vec2): bool =
   ## Checks if the a segment intersects b segment.
@@ -477,6 +509,8 @@ proc intersects*(a, b: Segment, at: var Vec2): bool =
     at.y = a.at.y + (t * s1y)
     return true
   return false
+
+{.push checks: off, stacktrace: off.}
 
 proc fillPolygon*(
     image: Image,
@@ -541,6 +575,8 @@ proc fillPolygon*(
       colorAlphad.a = uint8(a * 255.0)
       image.putRgba(x, y, colorAlphad)
 
+{.pop.}
+
 proc fillPolygon*(
     image: Image,
     path: Path,
@@ -556,12 +592,24 @@ proc fillPolygon*(
   ) =
   image.fillPolygon(parsePath(path), color)
 
+proc fillPolygon*(
+    image: Image,
+    path: string,
+    color: ColorRGBA,
+    pos: Vec2
+  ) =
+  var poly = commandsToPolygon(parsePath(path).commands)
+  for i, p in poly:
+    poly[i] = p + pos
+  image.fillPolygon(poly, color)
+
 proc addPath*(path: Path, other: Path) =
   ## Adds a path to the current path.
   path.commands &= other.commands
 
 proc closePath*(path: Path) =
   ## Causes the point of the pen to move back to the start of the current sub-path. It tries to draw a straight line from the current point to the start. If the shape has already been closed or has only one point, this function does nothing.
+  path.commands.add PathCommand(kind: End)
 
 proc moveTo*(path: Path, x, y: float32) =
   ## Moves the starting point of a new sub-path to the (x, y) coordinates.

@@ -1,4 +1,4 @@
-import chroma, math, os, streams, strformat, supersnappy, vmath
+import chroma, chroma/blends, math, os, streams, strformat, supersnappy, vmath, chroma/blends
 
 when defined(useStb):
   import stb_image/read as stbi
@@ -433,6 +433,70 @@ proc blitWithMask*(
           destRgba.a = 255
           destImage.putRgbaUnsafe(xDest, yDest, destRgba)
 
+proc blitMasked*(
+  destImage, fill, mask: Image
+) =
+  ## Fast blit of src + fill * mask. Images must be same size.
+  assert destImage.width == fill.width and destImage.width == mask.width
+  assert destImage.height == fill.height and destImage.height == mask.height
+
+  for y in 0 ..< int(destImage.height):
+    for x in 0 ..< int(destImage.width):
+      var
+        fill = fill.getRgbaUnsafe(x, y).color
+        mask = mask.getRgbaUnsafe(x, y).color
+
+      if mask.a > 0:
+        # var destRgba = destImage.getRgbaUnsafe(x, y)
+        # let a = float(maskRgba.a)/255.0 * float(fillRgba.a)/255.0
+        # destRgba.r = uint8(float(destRgba.r) * (1-a) + float(fillRgba.r) * a)
+        # destRgba.g = uint8(float(destRgba.g) * (1-a) + float(fillRgba.g) * a)
+        # destRgba.b = uint8(float(destRgba.b) * (1-a) + float(fillRgba.b) * a)
+        # destRgba.a = max(destRgba.a, uint8(a*255))
+        # destImage.putRgbaUnsafe(x, y, destRgba)
+
+        var dest = destImage.getRgbaUnsafe(x, y).color
+        let a = mask.a * fill.a
+        let finalAlpha = a + dest.a * (1 - a)
+        var final = (fill * a + dest * dest.a * (1 - a)) / finalAlpha
+        final.a = finalAlpha
+        destImage.putRgbaUnsafe(x, y, final.rgba)
+
+proc blitMaskStack*(
+  destImage: Image, maskStack: seq[Image]
+) =
+  ## Fast blit of src + [a + b + c ...]. Images must be same size.
+  for mask in maskStack:
+    assert destImage.width == mask.width
+    assert destImage.height == mask.height
+
+    for y in 0 ..< int(destImage.height):
+      for x in 0 ..< int(destImage.width):
+        var
+          maskRgba = mask.getRgbaUnsafe(x, y)
+
+        if maskRgba.a != uint8(255):
+          var destRgba = destImage.getRgbaUnsafe(x, y)
+          let a = float(maskRgba.a)/255.0
+          destRgba.a = min(destRgba.a, maskRgba.a)
+          destImage.putRgbaUnsafe(x, y, destRgba)
+
+proc blitWithBlendMode*(
+  destImage, fill: Image, blendMode: BlendMode, pos: Vec2,
+) =
+  ## Fast blit of dest + fill using blend mode.
+  let
+    xDest = pos.x.int
+    yDest = pos.y.int
+  for y in 0 ..< int(fill.height):
+    for x in 0 ..< int(fill.width):
+      let
+        fillRgba = fill.getRgbaUnsafe(x, y)
+        # TODO: Make it use getRgbaUnsafe.
+        destRgba = destImage.getRgba(x + xDest, y + yDest)
+        color = blendMode.mix(destRgba.color, fillRgba.color)
+      destImage.putRgba(x + xDest, y + yDest, color.rgba)
+
 proc computeBounds(
   destImage, srcImage: Image, mat: Mat4, matInv: Mat4
 ): (int, int, int, int) =
@@ -500,6 +564,17 @@ proc flipVertical*(image: Image): Image =
     for x in 0 ..< image.width:
       let rgba = image.getRgbaUnsafe(x, y)
       result.putRgbaUnsafe(x, image.height - y - 1, rgba)
+
+proc invertColor*(image: Image) =
+  ## Flips the image around the Y axis.
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
+      var rgba = image.getRgbaUnsafe(x, y)
+      rgba.r = 255 - rgba.r
+      rgba.g = 255 - rgba.g
+      rgba.b = 255 - rgba.b
+      rgba.a = 255 - rgba.a
+      image.putRgbaUnsafe(x, y, rgba)
 
 proc blit*(destImage, srcImage: Image, mat: Mat4) =
   ## Blits one image onto another using matrix with alpha blending.
@@ -919,52 +994,63 @@ proc alphaBleed*(image: Image) =
         rgba.a = 0
       image.putRgbaUnsafe(x, y, rgba)
 
-proc blur*(image: Image, xBlur: int, yBlur: int): Image =
-  ## Blurs the image by x and y directions.
-  var
-    blurX: Image
-    blurY: Image
+proc colorAlpha*(image: Image, color: Color) =
+  ## Stains the image with the color and alpha.
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
+      var c = image.getRgbaUnsafe(x, y).color
+      let a = c.a * color.a
+      c.r = c.r * (1-a) + color.r * a
+      c.g = c.g * (1-a) + color.g * a
+      c.b = c.b * (1-a) + color.b * a
+      c.a = a
+      image.putRgbaUnsafe(x, y, c.rgba)
 
-  if xBlur == 0 and yBlur == 0:
+proc blur*(image: Image, radius: float32): Image =
+  ## Applies Gaussian blur to the image given a radius.
+  let radius = (radius).int
+  if radius == 0:
     return image.copy()
 
-  if xBlur > 0:
-    blurX = newImage(image.width, image.height, image.channels)
-    for y in 0 ..< image.height:
-      for x in 0 ..< image.width:
-        var c: Color
-        for xb in 0 .. xBlur:
-          let c2 = image.getRgba(x + xb - xBlur div 2, y).color
-          c.r += c2.r
-          c.g += c2.g
-          c.b += c2.b
-          c.a += c2.a
-        c.r = c.r / (xBlur.float + 1)
-        c.g = c.g / (xBlur.float + 1)
-        c.b = c.b / (xBlur.float + 1)
-        c.a = c.a / (xBlur.float + 1)
-        blurX.putRgbaUnsafe(x, y, c.rgba)
-  else:
-    blurX = image
+  # Compute lookup table for 1d Gaussian kernel.
+  var lookup = newSeq[float](radius*2+1)
+  var total = 0.0
+  for xb in -radius .. radius:
+    let s = radius.float32 / 2.2 # 2.2 matches Figma.
+    let x = xb.float32
+    let a = 1/sqrt(2*PI*s^2) * exp(-1*x^2/(2*s^2))
+    lookup[xb + radius] = a
+    total += a
+  for xb in -radius .. radius:
+    lookup[xb + radius] /= total
 
-  if yBlur > 0:
-    blurY = newImage(image.width, image.height, image.channels)
-    for y in 0 ..< image.height:
-      for x in 0 ..< image.width:
-        var c: Color
-        for yb in 0 .. yBlur:
-          let c2 = blurX.getRgba(x, y + yb - yBlur div 2).color
-          c.r += c2.r
-          c.g += c2.g
-          c.b += c2.b
-          c.a += c2.a
-        c.r = c.r / (yBlur.float + 1)
-        c.g = c.g / (yBlur.float + 1)
-        c.b = c.b / (yBlur.float + 1)
-        c.a = c.a / (yBlur.float + 1)
-        blurY.putRgbaUnsafe(x, y, c.rgba)
-  else:
-    blurY = blurX
+  # Blur in the X direction.
+  var blurX = newImage(image.width, image.height, image.channels)
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
+      var c: Color
+      for xb in -radius .. radius:
+        let c2 = image.getRgba(x + xb, y).color
+        let a = lookup[xb + radius]
+        c.r += c2.r * a
+        c.g += c2.g * a
+        c.b += c2.b * a
+        c.a += c2.a * a
+      blurX.putRgbaUnsafe(x, y, c.rgba)
+
+  # Blur in the Y direction.
+  var blurY = newImage(image.width, image.height, image.channels)
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
+      var c: Color
+      for yb in -radius .. radius:
+        let c2 = blurX.getRgba(x, y + yb).color
+        let a = lookup[yb + radius]
+        c.r += c2.r * a
+        c.g += c2.g * a
+        c.b += c2.b * a
+        c.a += c2.a * a
+      blurY.putRgbaUnsafe(x, y, c.rgba)
 
   return blurY
 
