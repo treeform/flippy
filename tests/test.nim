@@ -67,12 +67,10 @@ block:
   image.fillRect(rect = rect(40, 40, 20, 20),
     rgba = rgba(255, 255, 255, 255))
 
-  image.blur(0, 0).save("blur0x0.png")
-  image.blur(1, 1).save("blur1x1.png")
-  image.blur(2, 2).save("blur2x2.png")
-  image.blur(16, 0).save("blur16x0.png")
-  image.blur(0, 16).save("blur0x16.png")
-  image.blur(16, 16).save("blur16x16.png")
+  image.blur(0).save("blur0x0.png")
+  image.blur(1).save("blur1x1.png")
+  image.blur(2).save("blur2x2.png")
+  image.blur(16).save("blur16x16.png")
 
 block:
   echo "# Basic test"
