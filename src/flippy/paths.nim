@@ -21,6 +21,10 @@ type
     at*: Vec2
     commands*: seq[PathCommand]
 
+proc segment(at, to: Vec2): Segment =
+  result.at = at
+  result.to = to
+
 proc newPath*(): Path =
   result = Path()
 
@@ -483,7 +487,7 @@ proc commandsToPolygons*(commands: seq[PathCommand]): seq[seq[Vec2]] =
   if polygon.len > 0:
     result.add(polygon)
 
-iterator zipwise[T](s: seq[T]): (T, T) =
+iterator zipwise*[T](s: seq[T]): (T, T) =
   ## Return elements in pairs: (1st, 2nd), (2nd, 3rd) ... (Nth, last).
   for i in 0 ..< s.len - 1:
     yield(s[i], s[i + 1])
@@ -513,6 +517,62 @@ proc intersects*(a, b: Segment, at: var Vec2): bool =
     at.y = a.at.y + (t * s1y)
     return true
   return false
+
+proc strokePolygons*(ps: seq[seq[Vec2]], strokeWidthR, strokeWidthL: float32): seq[seq[Vec2]] =
+  ## Converts simple polygons into stroked versions:
+  # TODO: Stroke location, add caps and joins.
+  for p in ps:
+    var poly: seq[Vec2]
+    var back: seq[Vec2] # Back side of poly.
+    var prevRSeg: Segment
+    var prevLSeg: Segment
+    var first = true
+    for (at, to) in p.zipwise:
+      #echo at, ":", to
+      let tangent = (at - to).normalize()
+      let normal = vec2(-tangent.y, tangent.x)
+      #print tangent, normal
+
+      var
+        rSeg = segment(at + normal * strokeWidthR, to + normal * strokeWidthR)
+        lSeg = segment(at - normal * strokeWidthL, to - normal * strokeWidthL)
+
+      if first:
+        first = false
+        # TODO: draw start cap
+      else:
+        # as previous lines
+        var touch: Vec2
+        if intersects(prevRSeg, rSeg, touch):
+          rSeg.at = touch
+          poly.setLen(poly.len - 1)
+        else:
+          discard # TODO: draw joint
+
+        if intersects(prevLSeg, lSeg, touch):
+          lSeg.at = touch
+          back.setLen(back.len - 1)
+        else:
+          discard # TODO: draw joint
+
+      poly.add rSeg.at
+      back.add lSeg.at
+      poly.add rSeg.to
+      back.add lSeg.to
+
+      prevRSeg = rSeg
+      prevLSeg = lSeg
+
+    # Add the backside reversed:
+    for i in 1 .. back.len:
+      poly.add back[^i]
+
+    # TODO: draw end cap
+    # Cap it at the end:
+    poly.add poly[0]
+
+    result.add(poly)
+
 
 {.push checks: off, stacktrace: off.}
 
@@ -582,7 +642,7 @@ proc fillPolygons*(
 
 {.pop.}
 
-proc fillPolygon*(
+proc fillPath*(
     image: Image,
     path: Path,
     color: ColorRGBA
@@ -590,14 +650,14 @@ proc fillPolygon*(
   let polys = commandsToPolygons(path.commands)
   image.fillPolygons(polys, color)
 
-proc fillPolygon*(
+proc fillPath*(
     image: Image,
     path: string,
     color: ColorRGBA
   ) =
-  image.fillPolygon(parsePath(path), color)
+  image.fillPath(parsePath(path), color)
 
-proc fillPolygon*(
+proc fillPath*(
     image: Image,
     path: string,
     color: ColorRGBA,
@@ -608,6 +668,43 @@ proc fillPolygon*(
     for i, p in poly.mpairs:
       poly[i] = p + pos
   image.fillPolygons(polys, color)
+
+proc strokePath*(
+    image: Image,
+    path: Path,
+    color: ColorRGBA,
+    strokeWidth: float32,
+    # strokeLocation: StrokeLocation,
+    # strokeCap: StorkeCap,
+    # strokeJoin: StorkeJoin
+  ) =
+  let polys = commandsToPolygons(path.commands)
+  let (strokeL, strokeR) = (strokeWidth/2, strokeWidth/2)
+  let polys2 = strokePolygons(polys, strokeL, strokeR)
+  image.fillPolygons(polys2, color)
+
+proc strokePath*(
+    image: Image,
+    path: string,
+    color: ColorRGBA,
+    strokeWidth: float32
+  ) =
+  image.strokePath(parsePath(path), color, strokeWidth)
+
+proc strokePath*(
+    image: Image,
+    path: string,
+    color: ColorRGBA,
+    strokeWidth: float32,
+    pos: Vec2
+  ) =
+  var polys = commandsToPolygons(parsePath(path).commands)
+  let (strokeL, strokeR) = (strokeWidth/2, strokeWidth/2)
+  var polys2 = strokePolygons(polys, strokeL, strokeR)
+  for poly in polys2.mitems:
+    for i, p in poly.mpairs:
+      poly[i] = p + pos
+  image.fillPolygons(polys2, color)
 
 proc addPath*(path: Path, other: Path) =
   ## Adds a path to the current path.

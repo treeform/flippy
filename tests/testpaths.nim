@@ -4,6 +4,55 @@ setCurrentDir(getCurrentDir() / "tests")
 
 block:
   let image = newImage(100, 100, 4)
+  let pathStr = "M 10 10 L 90 90"
+  let path = parsePath(pathStr)
+  let polys = commandsToPolygons(path.commands)
+  let color = rgba(255, 0, 0, 255)
+  let polys2 = strokePolygons(polys, 5, 5)
+  image.fillPolygons(polys2, color)
+  image.save("pathStroke1.png")
+
+block:
+  let image = newImage(100, 100, 4)
+  let pathStr = "M 10 10 L 50 60 90 90"
+  let path = parsePath(pathStr)
+  let polys = commandsToPolygons(path.commands)
+  let color = rgba(255, 0, 0, 255)
+  let polys2 = strokePolygons(polys, 5, 5)
+  image.fillPolygons(polys2, color)
+  image.save("pathStroke2.png")
+
+block:
+  let image = newImage(100, 100, 4)
+  let pathStr = "M 15 10 L 30 90 60 30 90 90"
+  let path = parsePath(pathStr)
+  let polys = commandsToPolygons(path.commands)
+  let color = rgba(255, 0, 0, 255)
+  let polys2 = strokePolygons(polys, 2, 5)
+  image.fillPolygons(polys2, color)
+
+  for p in polys:
+    for (at, to) in p.zipwise:
+      image.line(at, to, rgba(0, 0, 0, 255))
+
+  for p in polys2:
+    for (at, to) in p.zipwise:
+      image.line(at, to, rgba(255, 255, 255, 255))
+
+  image.save("pathStroke3.png")
+
+block:
+  let image = newImage(100, 100, 4)
+  image.strokePath(
+    "M 15 10 L 30 90 60 30 90 90",
+    rgba(255, 255, 0, 255),
+    strokeWidth = 10
+  )
+
+  image.save("pathStroke4.png")
+
+block:
+  let image = newImage(100, 100, 4)
   let pathStr = "M 10 10 H 90 V 90 H 10 L 10 10"
   let path = parsePath(pathStr)
   let polys = commandsToPolygons(path.commands)
@@ -14,7 +63,7 @@ block:
 
 block:
   let image = newImage(100, 100, 4)
-  image.fillPolygon(
+  image.fillPath(
     "M 10 10 H 90 V 90 H 10 L 10 10",
     rgba(255, 255, 0, 255)
   )
@@ -28,7 +77,7 @@ block:
   path.lineTo(90, 90)
   path.lineTo(90, 10)
   path.lineTo(10, 10)
-  image.fillPolygon(
+  image.fillPath(
     path,
     rgba(255, 0, 0, 255)
   )
@@ -36,7 +85,7 @@ block:
 
 block:
   let image = newImage(100, 100, 4)
-  image.fillPolygon(
+  image.fillPath(
     "M30 60 A 20 20 0 0 0 90 60 L 30 60",
     parseHtmlColor("#FC427B").rgba
   )
@@ -44,7 +93,7 @@ block:
 
 block:
   let image = newImage(100, 100, 4)
-  image.fillPolygon(
+  image.fillPath(
     """
       M 10,30
       A 20,20 0,0,1 50,30
@@ -58,7 +107,7 @@ block:
 
 block:
   let image = newImage(100, 100, 4)
-  image.fillPolygon(
+  image.fillPath(
     "M 20 50 A 20 10 45 1 1 80 50 L 20 50",
     parseHtmlColor("#FC427B").rgba
   )
@@ -66,7 +115,7 @@ block:
 
 block:
   let image = newImage(100, 100, 4)
-  image.fillPolygon(
+  image.fillPath(
     "M 0 50 A 50 50 0 0 0 50 0 L 50 50 L 0 50",
     parseHtmlColor("#FC427B").rgba
   )
@@ -74,7 +123,7 @@ block:
 
 block:
   let image = newImage(100, 100, 4)
-  image.fillPolygon(
+  image.fillPath(
     "M 0 50 A 50 50 0 0 1 50 0 L 50 50 L 0 50",
     parseHtmlColor("#FC427B").rgba
   )
@@ -98,7 +147,7 @@ block:
   for p in path.commands:
     echo p
   echo path
-  image.fillPolygon(
+  image.fillPath(
     path,
     rgba(255, 0, 0, 255)
   )
