@@ -10,6 +10,6 @@ srcDir        = "src"
 
 requires "nim >= 1.0.0"
 requires "vmath >= 0.1.0"
-requires "chroma >= 0.1.2"
+requires "chroma >= 0.1.4"
 requires "nimPNG >= 0.2.6"
 requires "supersnappy >= 1.0.0"

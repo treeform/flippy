@@ -1,9 +1,15 @@
 ## Load and Save SVG files.
 
-import chroma, flippy, flippy/paths, vmath, xmlparser, xmltree, strutils, print
+import chroma, flippy, flippy/paths, vmath, xmlparser, xmltree,
+  strutils, strutils, chroma/blends
 
-proc draw(img: Image, xml: XmlNode) =
-  print xml.tag
+var nPaths = 0
+var tmp: Image
+
+proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
+  #if nPaths > 0: return
+
+  #print xml.tag
 
   var fillColor: ColorRGBA
 
@@ -15,18 +21,42 @@ proc draw(img: Image, xml: XmlNode) =
       let stroke = xml.attr("stroke")
       let strokeWidth = xml.attr("stroke-width")
       let transform = xml.attr("transform")
-      print fill
+
+      if transform != "":
+        if transform.startsWith("matrix("):
+          echo transform
+          let arr = transform[7..^2].split(",")
+          echo arr
+          assert arr.len == 6
+          var m = mat3()
+          m[0] = parseFloat(arr[0])
+          m[1] = parseFloat(arr[1])
+          m[3] = parseFloat(arr[2])
+          m[4] = parseFloat(arr[3])
+          m[6] = parseFloat(arr[4])
+          m[7] = parseFloat(arr[5])
+          matStack.add(matStack[^1] * m)
+        else:
+          raise newException(ValueError, "Unsupported transform: " & transform)
+
+      #print fill
       if fill != "none" and fill != "":
         fillColor = parseHtmlColor(fill).rgba
-    of "path":
-      let d = xml.attr("d")
-      print d
-      img.fillPolygon(d, fillColor)
+      for child in xml:
+        if child.tag == "path":
+          let d = child.attr("d")
+          #print d
+          tmp.fillPath(d, fillColor, mat = matStack[^1])
+          img.blitWithBlendMode(tmp, Normal, vec2(0, 0))
+          inc nPaths
+        else:
+          img.draw(matStack, child)
+
+      if transform != "":
+        discard matStack.pop()
+
     else:
       raise newException(ValueError, "Unsupported tag: " & xml.tag )
-
-  for n in xml.items:
-    img.draw(n)
 
 proc readSvg*(data: string): Image =
   ## Read an SVG font from a stream.
@@ -40,13 +70,10 @@ proc readSvg*(data: string): Image =
   assert parseInt(box[1]) == 0
   let w = parseInt(box[2])
   let h = parseInt(box[3])
-  print w, h
+  #print w, h
   result = newImage(w, h, 4)
+  tmp = result.copy()
 
-  for n in xml.items:
-    result.draw(n)
-
-
-when isMainModule:
-  var img = readSvg(readFile("tests/Ghostscript_Tiger.svg"))
-  img.save("tests/Ghostscript_Tiger.png")
+  var matStack = @[mat3()]
+  for n in xml:
+    result.draw(matStack, n)

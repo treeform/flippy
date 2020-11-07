@@ -408,7 +408,8 @@ proc commandsToPolygons*(commands: seq[PathCommand]): seq[seq[Vec2]] =
               drawQuad(at, ctr, start)
           else:
             drawLine(at, start)
-        result.add(polygon)
+        if polygon.len > 0:
+          result.add(polygon)
         polygon = newSeq[Vec2]()
         at = start
 
@@ -488,9 +489,11 @@ proc commandsToPolygons*(commands: seq[PathCommand]): seq[seq[Vec2]] =
     result.add(polygon)
 
 iterator zipwise*[T](s: seq[T]): (T, T) =
-  ## Return elements in pairs: (1st, 2nd), (2nd, 3rd) ... (Nth, last).
+  ## Return elements in pairs: (1st, 2nd), (2nd, 3rd) ... (last, 1st).
   for i in 0 ..< s.len - 1:
     yield(s[i], s[i + 1])
+  if s.len > 0:
+    yield(s[^1], s[0])
 
 # iterator zipwise[T](s: seq[T]): (T, T) =
 #   ## Return elements in pairs: (1st, 2nd), (3rd, 4th) ... (Nth, last).
@@ -584,6 +587,9 @@ proc fillPolygons*(
   ) =
   const ep = 0.0001 * PI
 
+  if polys.len == 0:
+    image.fill(rgba(0, 0, 0, 0))
+
   proc scanLineHits(
     polys: seq[seq[Vec2]],
     hits: var seq[(float32, bool)],
@@ -667,6 +673,21 @@ proc fillPath*(
   for poly in polys.mitems:
     for i, p in poly.mpairs:
       poly[i] = p + pos
+  image.fillPolygons(polys, color)
+
+proc fillPath*(
+    image: Image,
+    path: string,
+    color: ColorRGBA,
+    mat: Mat3
+  ) =
+  var polys = commandsToPolygons(parsePath(path).commands)
+  for poly in polys.mitems:
+    for i, p in poly.mpairs:
+      poly[i] = mat * p
+    # close path?
+    #if poly.len > 0 and poly[0] != poly[^1]:
+    #  poly.add(poly[0])
   image.fillPolygons(polys, color)
 
 proc strokePath*(
