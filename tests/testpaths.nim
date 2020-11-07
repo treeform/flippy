@@ -6,9 +6,10 @@ block:
   let image = newImage(100, 100, 4)
   let pathStr = "M 10 10 H 90 V 90 H 10 L 10 10"
   let path = parsePath(pathStr)
-  let poly = commandsToPolygon(path.commands)
+  let polys = commandsToPolygons(path.commands)
+  echo polys
   let color = rgba(0, 0, 0, 255)
-  image.fillPolygon(poly, color)
+  image.fillPolygons(polys, color)
   image.save("pathBlackRectangle.png")
 
 block:

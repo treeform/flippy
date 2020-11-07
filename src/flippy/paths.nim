@@ -256,7 +256,7 @@ proc endpointToCenterArcParams(
     theta: theta, delta: delta
   )
 
-proc commandsToPolygon*(commands: seq[PathCommand]): seq[Vec2] =
+proc commandsToPolygons*(commands: seq[PathCommand]): seq[seq[Vec2]] =
   ## Converts SVG-like commands to simpler polygon
 
   var start, at, to, ctr, ctr2: Vec2
@@ -265,10 +265,11 @@ proc commandsToPolygon*(commands: seq[PathCommand]): seq[Vec2] =
   var polygon: seq[Vec2]
 
   proc drawLine(at, to: Vec2) =
+    # Don't add any 0 length lines.
     if at - to != vec2(0, 0):
-      # Don't add any 0 length lines.
-      #if polygon.len == 0 or polygon[^1] != at:
-      polygon.add(at)
+      # Don't double up points.
+      if polygon.len == 0 or polygon[^1] != at:
+        polygon.add(at)
       polygon.add(to)
 
   proc getCurvePoint(points: seq[Vec2], t: float32): Vec2 =
@@ -388,7 +389,7 @@ proc commandsToPolygon*(commands: seq[PathCommand]): seq[Vec2] =
         var a = arc.theta
         var rotMat = rotationMat3(arc.rotation)
         for i in 0 .. steps:
-          polygon.add(polygon[^1])
+          # polygon.add(polygon[^1])
           polygon.add(rotMat * vec2(
             cos(a)*arc.rx,
             sin(a)*arc.ry) + vec2(arc.cx, arc.cy)
@@ -403,6 +404,8 @@ proc commandsToPolygon*(commands: seq[PathCommand]): seq[Vec2] =
               drawQuad(at, ctr, start)
           else:
             drawLine(at, start)
+        result.add(polygon)
+        polygon = newSeq[Vec2]()
         at = start
 
       of RMove:
@@ -477,17 +480,18 @@ proc commandsToPolygon*(commands: seq[PathCommand]): seq[Vec2] =
 
     prevCommand = command.kind
 
-  return polygon
-
-# iterator zipwise[T](s: seq[T]): (T, T) =
-#   ## Return elements in pairs: (1st, 2nd), (2nd, 3rd) ... (Nth, last).
-#   for i in 0 ..< s.len - 1:
-#     yield(s[i], s[i + 1])
+  if polygon.len > 0:
+    result.add(polygon)
 
 iterator zipwise[T](s: seq[T]): (T, T) =
-  ## Return elements in pairs: (1st, 2nd), (3rd, 4th) ... (Nth, last).
-  for i in 0 ..< s.len div 2:
-    yield(s[i*2 + 0], s[i*2 + 1])
+  ## Return elements in pairs: (1st, 2nd), (2nd, 3rd) ... (Nth, last).
+  for i in 0 ..< s.len - 1:
+    yield(s[i], s[i + 1])
+
+# iterator zipwise[T](s: seq[T]): (T, T) =
+#   ## Return elements in pairs: (1st, 2nd), (3rd, 4th) ... (Nth, last).
+#   for i in 0 ..< s.len div 2:
+#     yield(s[i*2 + 0], s[i*2 + 1])
 
 proc intersects*(a, b: Segment, at: var Vec2): bool =
   ## Checks if the a segment intersects b segment.
@@ -512,16 +516,16 @@ proc intersects*(a, b: Segment, at: var Vec2): bool =
 
 {.push checks: off, stacktrace: off.}
 
-proc fillPolygon*(
+proc fillPolygons*(
     image: Image,
-    poly: seq[Vec2],
+    polys: seq[seq[Vec2]],
     color: ColorRGBA,
     quality = 4,
   ) =
   const ep = 0.0001 * PI
 
   proc scanLineHits(
-    poly: seq[Vec2],
+    polys: seq[seq[Vec2]],
     hits: var seq[(float32, bool)],
     y: int,
     shiftY: float32
@@ -530,12 +534,13 @@ proc fillPolygon*(
     var yLine = (float32(y) + ep) + shiftY
     var scan = Segment(at: vec2(-10000, yLine), to: vec2(100000, yLine))
 
-    for (at, to) in poly.zipwise:
-      let line = Segment(at: at, to: to)
-      var at: Vec2
-      if line.intersects(scan, at):
-        let winding = line.at.y > line.to.y
-        hits.add((at.x, winding))
+    for poly in polys:
+      for (at, to) in poly.zipwise:
+        let line = Segment(at: at, to: to)
+        var at: Vec2
+        if line.intersects(scan, at):
+          let winding = line.at.y > line.to.y
+          hits.add((at.x, winding))
 
     hits.sort(proc(a, b: (float32, bool)): int = cmp(a[0], b[0]))
 
@@ -546,7 +551,7 @@ proc fillPolygon*(
     for x in 0 ..< image.width:
       alphas[x] = 0
     for m in 0 ..< quality:
-      poly.scanLineHits(hits, y, float32(m)/float32(quality))
+      polys.scanLineHits(hits, y, float32(m)/float32(quality))
       if hits.len == 0:
         continue
       var
@@ -582,8 +587,8 @@ proc fillPolygon*(
     path: Path,
     color: ColorRGBA
   ) =
-  let poly = commandsToPolygon(path.commands)
-  image.fillPolygon(poly, color)
+  let polys = commandsToPolygons(path.commands)
+  image.fillPolygons(polys, color)
 
 proc fillPolygon*(
     image: Image,
@@ -598,10 +603,11 @@ proc fillPolygon*(
     color: ColorRGBA,
     pos: Vec2
   ) =
-  var poly = commandsToPolygon(parsePath(path).commands)
-  for i, p in poly:
-    poly[i] = p + pos
-  image.fillPolygon(poly, color)
+  var polys = commandsToPolygons(parsePath(path).commands)
+  for poly in polys.mitems:
+    for i, p in poly.mpairs:
+      poly[i] = p + pos
+  image.fillPolygons(polys, color)
 
 proc addPath*(path: Path, other: Path) =
   ## Adds a path to the current path.
@@ -623,12 +629,15 @@ proc lineTo*(path: Path, x, y: float32) =
 
 proc bezierCurveTo*(path: Path) =
   ## Adds a cubic Bézier curve to the path. It requires three points. The first two points are control points and the third one is the end point. The starting point is the last point in the current path, which can be changed using moveTo() before creating the Bézier curve.
+  raise newException(ValueError, "not implemented")
 
 proc quadraticCurveTo*(path: Path) =
   ## Adds a quadratic Bézier curve to the current path.
+  raise newException(ValueError, "not implemented")
 
 proc arc*(path: Path) =
   ## Adds an arc to the path which is centered at (x, y) position with radius r starting at startAngle and ending at endAngle going in the given direction by anticlockwise (defaulting to clockwise).
+  raise newException(ValueError, "not implemented")
 
 proc arcTo*(path: Path, x1, y1, x2, y2, r: float32) =
   ## Adds a circular arc to the path with the given control points and radius, connected to the previous point by a straight line.
@@ -710,6 +719,8 @@ proc arcTo*(path: Path, x1, y1, x2, y2, r: float32) =
 
 proc ellipse*(path: Path) =
   ## Adds an elliptical arc to the path which is centered at (x, y) position with the radii radiusX and radiusY starting at startAngle and ending at endAngle going in the given direction by anticlockwise (defaulting to clockwise).
+  raise newException(ValueError, "not implemented")
 
 proc rect*(path: Path) =
   ## Creates a path for a rectangle at position (x, y) with a size that is determined by width and height.
+  raise newException(ValueError, "not implemented")
