@@ -3,18 +3,9 @@
 import chroma, flippy, flippy/paths, vmath, xmlparser, xmltree,
   strutils, strutils, chroma/blends
 
-var nPaths = 0
 var tmp: Image
 
 proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
-  #if nPaths > 0: return
-
-  #print xml.tag
-
-  var fillColor: ColorRGBA
-
-  let id = xml.attr("id")
-
   case xml.tag:
     of "g":
       let fill = xml.attr("fill")
@@ -24,9 +15,7 @@ proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
 
       if transform != "":
         if transform.startsWith("matrix("):
-          echo transform
           let arr = transform[7..^2].split(",")
-          echo arr
           assert arr.len == 6
           var m = mat3()
           m[0] = parseFloat(arr[0])
@@ -39,16 +28,21 @@ proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
         else:
           raise newException(ValueError, "Unsupported transform: " & transform)
 
-      #print fill
-      if fill != "none" and fill != "":
-        fillColor = parseHtmlColor(fill).rgba
       for child in xml:
         if child.tag == "path":
           let d = child.attr("d")
-          #print d
-          tmp.fillPath(d, fillColor, mat = matStack[^1])
-          img.blitWithBlendMode(tmp, Normal, vec2(0, 0))
-          inc nPaths
+
+          if fill != "none" and fill != "":
+            let fillColor = parseHtmlColor(fill).rgba
+            tmp.fillPath(d, fillColor, mat = matStack[^1])
+            img.blitWithBlendMode(tmp, Normal, vec2(0, 0))
+
+          if stroke != "none" and strokeWidth != "":
+            let strokeColor = parseHtmlColor(stroke).rgba
+            let strokeWidth = parseFloat(strokeWidth)
+            tmp.strokePath(d, strokeColor, strokeWidth, mat = matStack[^1])
+            img.blitWithBlendMode(tmp, Normal, vec2(0, 0))
+
         else:
           img.draw(matStack, child)
 
@@ -59,10 +53,8 @@ proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
       raise newException(ValueError, "Unsupported tag: " & xml.tag )
 
 proc readSvg*(data: string): Image =
-  ## Read an SVG font from a stream.
+  ## Render SVG file and return the image.
   var xml = parseXml(data)
-
-  echo "here"
   assert xml.tag == "svg"
   var viewBox = xml.attr "viewBox"
   let box = viewBox.split(" ")
@@ -70,7 +62,6 @@ proc readSvg*(data: string): Image =
   assert parseInt(box[1]) == 0
   let w = parseInt(box[2])
   let h = parseInt(box[3])
-  #print w, h
   result = newImage(w, h, 4)
   tmp = result.copy()
 

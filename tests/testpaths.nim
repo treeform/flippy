@@ -3,6 +3,7 @@ import chroma, flippy, flippy/paths, os, osproc, vmath
 setCurrentDir(getCurrentDir() / "tests")
 
 block:
+  echo "pathStroke1"
   let image = newImage(100, 100, 4)
   let pathStr = "M 10 10 L 90 90"
   let path = parsePath(pathStr)
@@ -13,6 +14,7 @@ block:
   image.save("pathStroke1.png")
 
 block:
+  echo "pathStroke2"
   let image = newImage(100, 100, 4)
   let pathStr = "M 10 10 L 50 60 90 90"
   let path = parsePath(pathStr)
@@ -23,6 +25,7 @@ block:
   image.save("pathStroke2.png")
 
 block:
+  echo "pathStroke3"
   let image = newImage(100, 100, 4)
   let pathStr = "M 15 10 L 30 90 60 30 90 90"
   let path = parsePath(pathStr)
@@ -32,7 +35,7 @@ block:
   image.fillPolygons(polys2, color)
 
   for p in polys:
-    for (at, to) in p.zipwise:
+    for (at, to) in p.zipline:
       image.line(at, to, rgba(0, 0, 0, 255))
 
   for p in polys2:
@@ -42,26 +45,27 @@ block:
   image.save("pathStroke3.png")
 
 block:
+  echo "pathStroke4"
   let image = newImage(100, 100, 4)
   image.strokePath(
     "M 15 10 L 30 90 60 30 90 90",
     rgba(255, 255, 0, 255),
     strokeWidth = 10
   )
-
   image.save("pathStroke4.png")
 
 block:
+  echo "pathBlackRectangle"
   let image = newImage(100, 100, 4)
   let pathStr = "M 10 10 H 90 V 90 H 10 L 10 10"
   let path = parsePath(pathStr)
   let polys = commandsToPolygons(path.commands)
-  echo polys
   let color = rgba(0, 0, 0, 255)
   image.fillPolygons(polys, color)
   image.save("pathBlackRectangle.png")
 
 block:
+  echo "pathYellowRectangle"
   let image = newImage(100, 100, 4)
   image.fillPath(
     "M 10 10 H 90 V 90 H 10 L 10 10",
@@ -70,6 +74,7 @@ block:
   image.save("pathYellowRectangle.png")
 
 block:
+  echo "pathRedRectangle"
   let image = newImage(100, 100, 4)
   var path = newPath()
   path.moveTo(10, 10)
@@ -84,6 +89,7 @@ block:
   image.save("pathRedRectangle.png")
 
 block:
+  echo "pathBottomArc"
   let image = newImage(100, 100, 4)
   image.fillPath(
     "M30 60 A 20 20 0 0 0 90 60 L 30 60",
@@ -92,6 +98,7 @@ block:
   image.save("pathBottomArc.png")
 
 block:
+  echo "pathHeart"
   let image = newImage(100, 100, 4)
   image.fillPath(
     """
@@ -106,6 +113,7 @@ block:
   image.save("pathHeart.png")
 
 block:
+  echo "pathRotatedArc"
   let image = newImage(100, 100, 4)
   image.fillPath(
     "M 20 50 A 20 10 45 1 1 80 50 L 20 50",
@@ -114,6 +122,7 @@ block:
   image.save("pathRotatedArc.png")
 
 block:
+  echo "pathInvertedCornerArc"
   let image = newImage(100, 100, 4)
   image.fillPath(
     "M 0 50 A 50 50 0 0 0 50 0 L 50 50 L 0 50",
@@ -122,6 +131,7 @@ block:
   image.save("pathInvertedCornerArc.png")
 
 block:
+  echo "pathCornerArc"
   let image = newImage(100, 100, 4)
   image.fillPath(
     "M 0 50 A 50 50 0 0 1 50 0 L 50 50 L 0 50",
@@ -143,10 +153,6 @@ block:
   path.arcTo(x+w, y+h, x,   y+h, r)
   path.arcTo(x,   y+h, x,   y,   r)
   path.arcTo(x,   y,   x+w, y,   r)
-  echo "---"
-  for p in path.commands:
-    echo p
-  echo path
   image.fillPath(
     path,
     rgba(255, 0, 0, 255)

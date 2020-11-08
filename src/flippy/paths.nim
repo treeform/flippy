@@ -472,7 +472,7 @@ proc commandsToPolygons*(commands: seq[PathCommand]): seq[seq[Vec2]] =
 
       of RSCurve:
         assert command.numbers.len == 4
-        ctr = at - (ctr2 - at)
+        ctr = at
         ctr2.x = at.x + command.numbers[0]
         ctr2.y = at.y + command.numbers[1]
         to.x = at.x + command.numbers[2]
@@ -488,17 +488,17 @@ proc commandsToPolygons*(commands: seq[PathCommand]): seq[seq[Vec2]] =
   if polygon.len > 0:
     result.add(polygon)
 
+iterator zipline*[T](s: seq[T]): (T, T) =
+  ## Return elements in pairs: (1st, 2nd), (2nd, 3rd) ... (nth, last).
+  for i in 0 ..< s.len - 1:
+    yield(s[i], s[i + 1])
+
 iterator zipwise*[T](s: seq[T]): (T, T) =
   ## Return elements in pairs: (1st, 2nd), (2nd, 3rd) ... (last, 1st).
   for i in 0 ..< s.len - 1:
     yield(s[i], s[i + 1])
   if s.len > 0:
     yield(s[^1], s[0])
-
-# iterator zipwise[T](s: seq[T]): (T, T) =
-#   ## Return elements in pairs: (1st, 2nd), (3rd, 4th) ... (Nth, last).
-#   for i in 0 ..< s.len div 2:
-#     yield(s[i*2 + 0], s[i*2 + 1])
 
 proc intersects*(a, b: Segment, at: var Vec2): bool =
   ## Checks if the a segment intersects b segment.
@@ -530,7 +530,7 @@ proc strokePolygons*(ps: seq[seq[Vec2]], strokeWidthR, strokeWidthL: float32): s
     var prevRSeg: Segment
     var prevLSeg: Segment
     var first = true
-    for (at, to) in p.zipwise:
+    for (at, to) in p.zipline:
       #echo at, ":", to
       let tangent = (at - to).normalize()
       let normal = vec2(-tangent.y, tangent.x)
@@ -725,6 +725,21 @@ proc strokePath*(
   for poly in polys2.mitems:
     for i, p in poly.mpairs:
       poly[i] = p + pos
+  image.fillPolygons(polys2, color)
+
+proc strokePath*(
+    image: Image,
+    path: string,
+    color: ColorRGBA,
+    strokeWidth: float32,
+    mat: Mat3
+  ) =
+  var polys = commandsToPolygons(parsePath(path).commands)
+  let (strokeL, strokeR) = (strokeWidth/2, strokeWidth/2)
+  var polys2 = strokePolygons(polys, strokeL, strokeR)
+  for poly in polys2.mitems:
+    for i, p in poly.mpairs:
+      poly[i] = mat * p
   image.fillPolygons(polys2, color)
 
 proc addPath*(path: Path, other: Path) =
