@@ -614,9 +614,7 @@ proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
       let srcV = start + stepX * float32(x) + stepY * float32(y)
       if srcImage.inside(int srcV.x, int srcV.y):
         let
-          #srcRgba = srcImage.getRgbaSmooth(srcV.x, srcV.y)
-          srcRgba = srcImage.getRgba(srcV.x.int, srcV.y.int)
-          #srcRgba = srcImage.getRgbaSmooth(srcV.x, srcV.y)
+          srcRgba = srcImage.getRgbaSmooth(srcV.x - 0.5, srcV.y - 0.5)
         let
           destRgba = destImage.getRgbaUnsafe(x, y)
           color = blendMode.mix(destRgba.color, srcRgba.color)

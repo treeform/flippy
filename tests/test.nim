@@ -130,6 +130,39 @@ block:
   main.save("composed.png")
 
 block:
+  echo "# Smooth Blit"
+
+  var main = newImage(255, 255, 4)
+
+  var redSquare = loadImage("redsquare.png")
+  let
+    w = redSquare.width
+    h = redSquare.height
+  redSquare.alphaBleed()
+
+  main.blitWithAlpha(
+    redSquare,
+    translate(vec3(64, 64, 0)) * rotateZ(PI*0) * translate(vec3(-w/2, -h/2, 0))
+  )
+
+  main.blitWithAlpha(
+    redSquare,
+    translate(vec3(192, 64, 0)) * rotateZ(PI*0.5) * translate(vec3(-w/2, -h/2, 0))
+  )
+
+  main.blitWithAlpha(
+    redSquare,
+    translate(vec3(192, 192, 0)) * rotateZ(PI*1.0) * translate(vec3(-w/2, -h/2, 0))
+  )
+
+  main.blitWithAlpha(
+    redSquare,
+    translate(vec3(64, 192, 0)) * rotateZ(PI*1.5) * translate(vec3(-w/2, -h/2, 0))
+  )
+
+  main.save("blit1.png")
+
+block:
   echo "# Flip tests"
   var lenna = loadImage("lenna.png")
   lenna.flipHorizontal.save("lenna.flipHorizontal.png")
