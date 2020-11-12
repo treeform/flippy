@@ -606,7 +606,8 @@ proc fillPolygons*(
         var at: Vec2
         if line.intersects(scan, at):
           let winding = line.at.y > line.to.y
-          hits.add((at.x, winding))
+          let x = at.x.clamp(0, image.width.float32)
+          hits.add((x, winding))
 
     hits.sort(proc(a, b: (float32, bool)): int = cmp(a[0], b[0]))
 
@@ -642,9 +643,9 @@ proc fillPolygons*(
         alphas[x] += penEdge
     for x in 0 ..< image.width:
       var a = clamp(abs(alphas[x]) / float32(quality), 0.0, 1.0)
-      var colorAlphad = color #ColorRgba(r: 255, g: 255, b: 255, a: uint8(a * 255.0))
-      colorAlphad.a = uint8(a * 255.0)
-      image.putRgba(x, y, colorAlphad)
+      var colorWithAlpha = color
+      colorWithAlpha.a = uint8(clamp(a, 0, 1) * 255.0)
+      image.putRgba(x, y, colorWithAlpha)
 
 {.pop.}
 
@@ -677,18 +678,23 @@ proc fillPath*(
 
 proc fillPath*(
     image: Image,
+    path: Path,
+    color: ColorRGBA,
+    mat: Mat3
+  ) =
+  var polys = commandsToPolygons(path.commands)
+  for poly in polys.mitems:
+    for i, p in poly.mpairs:
+      poly[i] = mat * p
+  image.fillPolygons(polys, color)
+
+proc fillPath*(
+    image: Image,
     path: string,
     color: ColorRGBA,
     mat: Mat3
   ) =
-  var polys = commandsToPolygons(parsePath(path).commands)
-  for poly in polys.mitems:
-    for i, p in poly.mpairs:
-      poly[i] = mat * p
-    # close path?
-    #if poly.len > 0 and poly[0] != poly[^1]:
-    #  poly.add(poly[0])
-  image.fillPolygons(polys, color)
+  image.fillPath(parsePath(path), color, mat)
 
 proc strokePath*(
     image: Image,
@@ -854,6 +860,11 @@ proc ellipse*(path: Path) =
   ## Adds an elliptical arc to the path which is centered at (x, y) position with the radii radiusX and radiusY starting at startAngle and ending at endAngle going in the given direction by anticlockwise (defaulting to clockwise).
   raise newException(ValueError, "not implemented")
 
-proc rect*(path: Path) =
+proc rect*(path: Path, x, y, w, h: float32) =
   ## Creates a path for a rectangle at position (x, y) with a size that is determined by width and height.
-  raise newException(ValueError, "not implemented")
+  path.moveTo(x, y)
+  path.lineTo(x+w, y)
+  path.lineTo(x+w, y+h)
+  path.lineTo(x,   y+h)
+  path.lineTo(x,   y)
+  path.closePath()

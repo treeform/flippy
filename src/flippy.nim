@@ -443,24 +443,15 @@ proc blitMasked*(
   for y in 0 ..< int(destImage.height):
     for x in 0 ..< int(destImage.width):
       var
-        fill = fill.getRgbaUnsafe(x, y).color
-        mask = mask.getRgbaUnsafe(x, y).color
+        fill = fill.getRgbaUnsafe(x, y)
+        mask = mask.getRgbaUnsafe(x, y)
 
       if mask.a > 0:
-        # var destRgba = destImage.getRgbaUnsafe(x, y)
-        # let a = float(maskRgba.a)/255.0 * float(fillRgba.a)/255.0
-        # destRgba.r = uint8(float(destRgba.r) * (1-a) + float(fillRgba.r) * a)
-        # destRgba.g = uint8(float(destRgba.g) * (1-a) + float(fillRgba.g) * a)
-        # destRgba.b = uint8(float(destRgba.b) * (1-a) + float(fillRgba.b) * a)
-        # destRgba.a = max(destRgba.a, uint8(a*255))
-        # destImage.putRgbaUnsafe(x, y, destRgba)
+        var dest = destImage.getRgbaUnsafe(x, y)
+        fill.a = ((mask.a.uint32 * fill.a.uint32) div 255).uint8
+        let final = Normal.mix(dest, fill)
 
-        var dest = destImage.getRgbaUnsafe(x, y).color
-        let a = mask.a * fill.a
-        let finalAlpha = a + dest.a * (1 - a)
-        var final = (fill * a + dest * dest.a * (1 - a)) / finalAlpha
-        final.a = finalAlpha
-        destImage.putRgbaUnsafe(x, y, final.rgba)
+        destImage.putRgbaUnsafe(x, y, final)
 
 proc blitMaskStack*(
   destImage: Image, maskStack: seq[Image]
@@ -492,28 +483,30 @@ proc blitWithBlendMode*(
     for x in 0 ..< int(fill.width):
       let
         fillRgba = fill.getRgbaUnsafe(x, y)
-        # TODO: Make it use getRgbaUnsafe.
-        destRgba = destImage.getRgba(x + xDest, y + yDest)
-        color = blendMode.mix(destRgba.color, fillRgba.color)
-      destImage.putRgba(x + xDest, y + yDest, color.rgba)
+      if fillRgba.a > 0:
+        let
+          # TODO: Make it use getRgbaUnsafe.
+          destRgba = destImage.getRgba(x + xDest, y + yDest)
+          rgba = blendMode.mix(destRgba, fillRgba)
+        destImage.putRgba(x + xDest, y + yDest, rgba)
 
 proc computeBounds(
   destImage, srcImage: Image, mat: Mat4, matInv: Mat4
 ): (int, int, int, int) =
   # Computes the bounds.
   let
-    bounds = @[
+    bounds = [
       mat * vec3(-1, -1, 0),
       mat * vec3(-1, float32 srcImage.height + 1, 0),
       mat * vec3(float32 srcImage.width + 1, -1, 0),
       mat * vec3(float32 srcImage.width + 1, float32 srcImage.height + 1, 0)
     ]
   var
-    boundsX = newSeq[float32](4)
-    boundsY = newSeq[float32](4)
-  for v in bounds:
-    boundsX.add(v.x)
-    boundsY.add(v.y)
+    boundsX: array[4, float32]
+    boundsY: array[4, float32]
+  for i, v in bounds:
+    boundsX[i] = v.x
+    boundsY[i] = v.y
   let
     xStart = max(int min(boundsX), 0)
     yStart = max(int min(boundsY), 0)
@@ -613,22 +606,21 @@ proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
     stepY /= 2
     minFilterBy2 /= 2
 
+  const blendMode = Normal
+
   # fill the bounding rectangle
   for y in yStart ..< yEnd:
     for x in xStart ..< xEnd:
       let srcV = start + stepX * float32(x) + stepY * float32(y)
       if srcImage.inside(int srcV.x, int srcV.y):
-        var rgba = srcImage.getRgbaSmooth(srcV.x, srcV.y)
-        if rgba.a == uint8(255):
-          destImage.putRgbaUnsafe(x, y, rgba)
-        elif rgba.a > uint8(0):
-          let destRgba = destImage.getRgbaUnsafe(x, y)
-          let a = float(rgba.a) / 255.0
-          rgba.r = uint8(float(destRgba.r) * (1 - a) + float(rgba.r) * a)
-          rgba.g = uint8(float(destRgba.g) * (1 - a) + float(rgba.g) * a)
-          rgba.b = uint8(float(destRgba.b) * (1 - a) + float(rgba.b) * a)
-          rgba.a = 255
-          destImage.putRgbaUnsafe(x, y, rgba)
+        let
+          #srcRgba = srcImage.getRgbaSmooth(srcV.x, srcV.y)
+          srcRgba = srcImage.getRgba(srcV.x.int, srcV.y.int)
+          #srcRgba = srcImage.getRgbaSmooth(srcV.x, srcV.y)
+        let
+          destRgba = destImage.getRgbaUnsafe(x, y)
+          color = blendMode.mix(destRgba.color, srcRgba.color)
+        destImage.putRgbaUnsafe(x, y, color.rgba)
 
 proc fill*(image: Image, rgba: ColorRgba) =
   ## Fills the image with a solid color.
@@ -1074,7 +1066,6 @@ proc outlineBorder*(image: Image, borderPx: int): Image =
   )
   for y in 0 ..< result.height:
     for x in 0 ..< result.width:
-
       var filled = false
       for bx in -borderPx .. borderPx:
         for by in -borderPx .. borderPx:
@@ -1086,6 +1077,33 @@ proc outlineBorder*(image: Image, borderPx: int): Image =
           break
       if filled:
         result.putRgbaUnsafe(x, y, rgba(255, 255, 255, 255))
+
+proc outlineBorder2*(image: Image, borderPx: int): Image =
+  ## Adds n pixel border around alpha parts of the image.
+  result = newImage(
+    image.width,
+    image.height,
+    image.channels
+  )
+  for y in 0 ..< result.height:
+    for x in 0 ..< result.width:
+      var filled = false
+      for bx in -borderPx .. borderPx:
+        for by in -borderPx .. borderPx:
+          var rgba = image.getRgba(x + bx, y - by)
+          if rgba.a > 0.uint8:
+            filled = true
+            break
+        if filled:
+          break
+      if filled:
+        result.putRgba(x, y, rgba(255, 255, 255, 255))
+  # subtract the original
+  for y in 0 ..< result.height:
+    for x in 0 ..< result.width:
+      var rgba = image.getRgba(x, y)
+      if rgba.a > 0.uint8:
+        result.putRgba(x, y, rgba(0, 0, 0, 255 - rgba.a))
 
 func width*(flippy: Flippy): int =
   flippy.mipmaps[0].width
