@@ -7,6 +7,7 @@ var tmp: Image
 
 proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
   case xml.tag:
+
     of "g":
       let fill = xml.attr("fill")
       let stroke = xml.attr("stroke")
@@ -26,7 +27,10 @@ proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
           m[7] = parseFloat(arr[5])
           matStack.add(matStack[^1] * m)
         else:
-          raise newException(ValueError, "Unsupported transform: " & transform)
+          echo "Unsupported transform: " & xml.tag
+          var m = mat3()
+          matStack.add(m)
+          #raise newException(ValueError, "Unsupported transform: " & transform)
 
       for child in xml:
         if child.tag == "path":
@@ -34,14 +38,24 @@ proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
 
           if fill != "none" and fill != "":
             let fillColor = parseHtmlColor(fill).rgba
+            tmp.fill(rgba(0,0,0,0))
             tmp.fillPath(d, fillColor, mat = matStack[^1])
             img.blitWithBlendMode(tmp, Normal, vec2(0, 0))
+            # if child.attr("id") == "path56":
+            #   echo "path56.fill.png"
+            #   tmp.save("path56.fill.png")
 
-          if stroke != "none" and strokeWidth != "":
+          if stroke != "none" and stroke != "":
             let strokeColor = parseHtmlColor(stroke).rgba
-            let strokeWidth = parseFloat(strokeWidth)
+            let strokeWidth =
+              if strokeWidth == "": 1.0 # Default stroke width is 1px
+              else: parseFloat(strokeWidth)
+            tmp.fill(rgba(0,0,0,0))
             tmp.strokePath(d, strokeColor, strokeWidth, mat = matStack[^1])
             img.blitWithBlendMode(tmp, Normal, vec2(0, 0))
+            # if child.attr("id") == "path56":
+            #   echo "path56.stroke.png"
+            #   tmp.save("path56.stroke.png")
 
         else:
           img.draw(matStack, child)
@@ -50,7 +64,8 @@ proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
         discard matStack.pop()
 
     else:
-      raise newException(ValueError, "Unsupported tag: " & xml.tag )
+      echo "Unsupported tag: " & xml.tag
+      #raise newException(ValueError, "Unsupported tag: " & xml.tag )
 
 proc readSvg*(data: string): Image =
   ## Render SVG file and return the image.
@@ -63,6 +78,9 @@ proc readSvg*(data: string): Image =
   let w = parseInt(box[2])
   let h = parseInt(box[3])
   result = newImage(w, h, 4)
+
+  #result.fill(rgba(255, 255, 255, 255))
+
   tmp = result.copy()
 
   var matStack = @[mat3()]
