@@ -395,39 +395,43 @@ proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
     rect(pos.x, pos.y, srcImage.width.float32, srcImage.height.float32)
   )
 
+proc draw*(
+  destImage, srcImage: Image, pos = vec2(0, 0), blendMode = Normal,
+) =
+  ## Fast draw of dest + fill using offset with color blending.
+  let b = destImage.rect() and srcImage.rect(pos)
+  let srcXY = b.xy - pos
+
+  # echo "pos            ", pos
+  # echo "destImage rect ", destImage.rect()
+  # echo "srcImage rect  ", srcImage.rect(pos)
+  # echo "bounds         ", b
+  # echo "srcXY          ", srcXY
+  # echo "destXY         ", b.xy
+
+  for y in 0 ..< b.h.int:
+    for x in 0 ..< b.w.int:
+      let
+        srcRgba = srcImage.getRgbaUnsafe(x + srcXY.x.int, y + srcXY.y.int)
+      if blendMode == Mask or srcRgba.a > 0 :
+        let
+          destRgba = destImage.getRgbaUnsafe(x + b.xy.x.int, y + b.xy.y.int)
+          rgba = blendMode.mix(destRgba, srcRgba)
+        destImage.putRgba(x + b.xy.x.int, y + b.xy.y.int, rgba)
+
 # proc draw*(
 #   destImage, fill: Image, pos = vec2(0, 0), blendMode = Normal,
 # ) =
-#   ## Fast draw of dest + fill using offset with color blending.
-#   let b = destImage.rect() and fill.rect(pos)
-
-#   # echo "destImage rect", destImage.rect()
-#   # echo "fill rect", destImage.rect()
-#   # echo b
-
-#   for y in b.y.int ..< b.y.int + b.h.int:
-#     for x in b.x.int ..< b.x.int + b.w.int:
+#   for y in 0 ..< fill.height:
+#     for x in 0 ..< fill.width:
 #       let
-#         fillRgba = fill.getRgbaUnsafe(x - b.x.int, y - b.y.int)
-#       if blendMode == Mask or fillRgba.a > 0 :
+#         fillRgba = fill.getRgbaUnsafe(x, y)
+#       if blendMode == Mask or fillRgba.a > 0:
+#         # TODO: Make unsafe
 #         let
-#           destRgba = destImage.getRgbaUnsafe(x, y)
+#           destRgba = destImage.getRgba(x + pos.x.int, y + pos.y.int)
 #           rgba = blendMode.mix(destRgba, fillRgba)
-#         destImage.putRgba(x, y, rgba)
-
-proc draw*(
-  destImage, fill: Image, pos = vec2(0, 0), blendMode = Normal,
-) =
-  for y in 0 ..< fill.height:
-    for x in 0 ..< fill.width:
-      let
-        fillRgba = fill.getRgbaUnsafe(x, y)
-      if blendMode == Mask or fillRgba.a > 0:
-        # TODO: Make unsafe
-        let
-          destRgba = destImage.getRgba(x + pos.x.int, y + pos.y.int)
-          rgba = blendMode.mix(destRgba, fillRgba)
-        destImage.putRgba(x + pos.x.int, y + pos.y.int, rgba)
+#         destImage.putRgba(x + pos.x.int, y + pos.y.int, rgba)
 
 proc computeBounds(
   destImage, srcImage: Image, mat: Mat4, matInv: Mat4

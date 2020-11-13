@@ -2,6 +2,80 @@ import chroma, flippy, os, osproc, vmath
 
 setCurrentDir(getCurrentDir() / "tests")
 
+
+block:
+  echo "# Draw edge pos tests"
+
+  var main = newImage(255, 255, 4)
+
+  var redSquare = loadImage("redsquare.png")
+  let
+    w = redSquare.width
+    h = redSquare.height
+  redSquare.alphaBleed()
+
+  main.draw(
+    redSquare,
+    pos = vec2(-32, -32)
+  )
+
+  main.draw(
+    redSquare,
+    pos = vec2(192, -32)
+  )
+
+  main.draw(
+    redSquare,
+    pos = vec2(192, 192)
+  )
+
+  main.draw(
+    redSquare,
+    pos = vec2(-32, 192)
+  )
+
+  main.draw(
+    redSquare,
+    pos = vec2(
+      main.width/2 - redSquare.width/2,
+      main.height/2 - redSquare.height/2)
+  )
+
+  main.save("edgesPos.png")
+
+block:
+  echo "# Draw edge matrix tests"
+
+  var main = newImage(255, 255, 4)
+
+  var redSquare = loadImage("redsquare.png")
+  let
+    w = redSquare.width
+    h = redSquare.height
+  redSquare.alphaBleed()
+
+  main.draw(
+    redSquare,
+    translate(vec3(32, 32, 0)) * rotateZ(PI*0) * translate(vec3(-w/2, -h/2, 0))
+  )
+
+  main.draw(
+    redSquare,
+    translate(vec3(224, 32, 0)) * rotateZ(PI*0.5) * translate(vec3(-w/2, -h/2, 0))
+  )
+
+  main.draw(
+    redSquare,
+    translate(vec3(224, 224, 0)) * rotateZ(PI*1.0) * translate(vec3(-w/2, -h/2, 0))
+  )
+
+  main.draw(
+    redSquare,
+    translate(vec3(32, 224, 0)) * rotateZ(PI*1.5) * translate(vec3(-w/2, -h/2, 0))
+  )
+
+  main.save("edgesMatrix.png")
+
 block:
   echo "# Test strokeRoundedRect 1px"
   let image = newImage(100, 100, 4)
