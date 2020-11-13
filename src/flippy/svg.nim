@@ -30,7 +30,6 @@ proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
           echo "Unsupported transform: " & xml.tag
           var m = mat3()
           matStack.add(m)
-          #raise newException(ValueError, "Unsupported transform: " & transform)
 
       for child in xml:
         if child.tag == "path":
@@ -40,10 +39,7 @@ proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
             let fillColor = parseHtmlColor(fill).rgba
             tmp.fill(rgba(0,0,0,0))
             tmp.fillPath(d, fillColor, mat = matStack[^1])
-            img.blitWithBlendMode(tmp, Normal, vec2(0, 0))
-            # if child.attr("id") == "path56":
-            #   echo "path56.fill.png"
-            #   tmp.save("path56.fill.png")
+            img.draw(tmp)
 
           if stroke != "none" and stroke != "":
             let strokeColor = parseHtmlColor(stroke).rgba
@@ -52,10 +48,7 @@ proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
               else: parseFloat(strokeWidth)
             tmp.fill(rgba(0,0,0,0))
             tmp.strokePath(d, strokeColor, strokeWidth, mat = matStack[^1])
-            img.blitWithBlendMode(tmp, Normal, vec2(0, 0))
-            # if child.attr("id") == "path56":
-            #   echo "path56.stroke.png"
-            #   tmp.save("path56.stroke.png")
+            img.draw(tmp)
 
         else:
           img.draw(matStack, child)
@@ -65,7 +58,6 @@ proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
 
     else:
       echo "Unsupported tag: " & xml.tag
-      #raise newException(ValueError, "Unsupported tag: " & xml.tag )
 
 proc readSvg*(data: string): Image =
   ## Render SVG file and return the image.

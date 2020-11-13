@@ -92,28 +92,28 @@ block:
   image.save("lenna2.png")
 
 block:
-  echo "# Blit tests"
+  echo "# Draw tests"
 
   var main = newImage(255, 255, 4)
   var lenna = loadImage("lenna.png")
-  main.blitWithAlpha(
+  main.draw(
     lenna,
     scale(vec3(15, 15, 1)) * rotateZ(0.3)
   )
-  main.blitWithAlpha(
+  main.draw(
     lenna,
     scale(vec3(0.1, 0.1, 1)) * rotateZ(-0.3)
   )
 
   var redSquare = loadImage("redsquare.png")
   redSquare.alphaBleed()
-  main.blitWithAlpha(
+  main.draw(
     redSquare,
     scale(vec3(1, 1, 1)) * rotateZ(-0.3) * translate(vec3(100, 100, 0))
   )
 
   var bluestar = loadImage("bluestar.png")
-  main.blitWithAlpha(
+  main.draw(
     bluestar,
     translate(vec3(-50, -50, 0)) *
     scale(vec3(2, 2, 1)) *
@@ -122,7 +122,7 @@ block:
   )
 
   var greencircle = loadImage("greencircle.png")
-  main.blitWithAlpha(
+  main.draw(
     greencircle,
     translate(vec3(200, -50, 0))
   )
@@ -130,7 +130,7 @@ block:
   main.save("composed.png")
 
 block:
-  echo "# Smooth Blit"
+  echo "# Smooth Draw"
 
   var main = newImage(255, 255, 4)
 
@@ -140,22 +140,22 @@ block:
     h = redSquare.height
   redSquare.alphaBleed()
 
-  main.blitWithAlpha(
+  main.draw(
     redSquare,
     translate(vec3(64, 64, 0)) * rotateZ(PI*0) * translate(vec3(-w/2, -h/2, 0))
   )
 
-  main.blitWithAlpha(
+  main.draw(
     redSquare,
     translate(vec3(192, 64, 0)) * rotateZ(PI*0.5) * translate(vec3(-w/2, -h/2, 0))
   )
 
-  main.blitWithAlpha(
+  main.draw(
     redSquare,
     translate(vec3(192, 192, 0)) * rotateZ(PI*1.0) * translate(vec3(-w/2, -h/2, 0))
   )
 
-  main.blitWithAlpha(
+  main.draw(
     redSquare,
     translate(vec3(64, 192, 0)) * rotateZ(PI*1.5) * translate(vec3(-w/2, -h/2, 0))
   )

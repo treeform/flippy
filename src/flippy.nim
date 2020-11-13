@@ -153,6 +153,7 @@ proc save*(image: Image, filePath: string) =
   image.save()
 
 {.push checks: off, stacktrace: off.}
+{.pop.}
 
 proc inside*(image: Image, x, y: int): bool {.inline.} =
   ## Returns true if (x, y) is inside the image.
@@ -308,12 +309,18 @@ proc magnify*(image: Image, scale: int): Image =
         image.getRgbaUnsafe(x div scale, y div scale)
       result.putRgbaUnsafe(x, y, rgba)
 
+proc rect(img: Image, pos = vec2(0, 0)): Rect =
+  result.xy = pos
+  result.w = img.width.float32
+  result.h = img.height.float32
+
 proc blitUnsafe*(destImage: Image, srcImage: Image, src, dest: Rect) =
   ## Blits rectangle from one image to the other image.
   ## * No bounds checking *
   ## Make sure that src and dest rect are in bounds.
   ## Make sure that channels for images are the same.
   ## Failure in the assumptions will case unsafe memory writes.
+  ## Note: Does not do alpha or color mixing.
   let c = destImage.channels
   for y in 0 ..< int(dest.h):
     let
@@ -325,8 +332,9 @@ proc blitUnsafe*(destImage: Image, srcImage: Image, src, dest: Rect) =
       int(dest.w) * c
     )
 
-proc blitS*(destImage: Image, srcImage: Image, src, dest: Rect) =
+proc blitSafe*(destImage: Image, srcImage: Image, src, dest: Rect) =
   ## Slow blit but safe and accurate.
+  ## Note: Does not do alpha or color mixing.
   for y in int(src.y) ..< int(src.h):
     for x in int(src.x) ..< int(src.w):
       var rgba = srcImage.getRgba(x, y)
@@ -334,6 +342,7 @@ proc blitS*(destImage: Image, srcImage: Image, src, dest: Rect) =
 
 proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
   ## Blits rectangle from one image to the other image.
+  ## Note: Does not do alpha or color mixing.
   doAssert src.w == dest.w and src.h == dest.h
   doAssert src.x >= 0 and src.x + src.w <= srcImage.width.float32
   doAssert src.y >= 0 and src.y + src.h <= srcImage.height.float32
@@ -379,116 +388,46 @@ proc blit*(destImage: Image, srcImage: Image, src, dest: Rect) =
 
 proc blit*(destImage: Image, srcImage: Image, pos: Vec2) =
   ## Blits rectangle from one image to the other image.
+  ## Note: Does not do alpha or color mixing.
   destImage.blit(
     srcImage,
     rect(0.0, 0.0, srcImage.width.float32, srcImage.height.float32),
     rect(pos.x, pos.y, srcImage.width.float32, srcImage.height.float32)
   )
 
-proc mix(srcRgba, destRgba: ColorRGBA): ColorRGBA =
-  let a = float(srcRgba.a) / 255.0
-  result.r = uint8(float(destRgba.r) * (1 - a) + float(srcRgba.r) * a)
-  result.g = uint8(float(destRgba.g) * (1 - a) + float(srcRgba.g) * a)
-  result.b = uint8(float(destRgba.b) * (1 - a) + float(srcRgba.b) * a)
-  result.a = uint8(clamp(float(destRgba.a) + float(srcRgba.a), 0, 255))
+# proc draw*(
+#   destImage, fill: Image, pos = vec2(0, 0), blendMode = Normal,
+# ) =
+#   ## Fast draw of dest + fill using offset with color blending.
+#   let b = destImage.rect() and fill.rect(pos)
 
-{.pop.}
+#   # echo "destImage rect", destImage.rect()
+#   # echo "fill rect", destImage.rect()
+#   # echo b
 
-proc blitWithAlpha*(destImage: Image, srcImage: Image, src, dest: Rect) =
-  ## Blits rectangle from one image to the other image.
-  assert src.w == dest.w and src.h == dest.h
-  for y in 0 ..< int(src.h):
-    for x in 0 ..< int(src.w):
-      let
-        srcRgba = srcImage.getRgbaUnsafe(int(src.x) + x, int(src.y) + y)
-        destRgba = destImage.getRgba(int(dest.x) + x, int(dest.y) + y)
-        rgba = mix(srcRgba, destRgba)
-      destImage.putRgba(int(dest.x) + x, int(dest.y) + y, rgba)
+#   for y in b.y.int ..< b.y.int + b.h.int:
+#     for x in b.x.int ..< b.x.int + b.w.int:
+#       let
+#         fillRgba = fill.getRgbaUnsafe(x - b.x.int, y - b.y.int)
+#       if blendMode == Mask or fillRgba.a > 0 :
+#         let
+#           destRgba = destImage.getRgbaUnsafe(x, y)
+#           rgba = blendMode.mix(destRgba, fillRgba)
+#         destImage.putRgba(x, y, rgba)
 
-proc blitWithMask*(
-    destImage: Image,
-    srcImage: Image,
-    src, dest: Rect,
-    rgba: ColorRGBA
-  ) =
-  ## Blits rectangle from one image to the other image with masking color.
-  assert src.w == dest.w and src.h == dest.h
-  for y in 0 ..< int(src.h):
-    for x in 0 ..< int(src.w):
-      let
-        xSrc = int(src.x) + x
-        ySrc = int(src.y) + y
-        xDest = int(dest.x) + x
-        yDest = int(dest.y) + y
-      if destImage.inside(xDest, yDest) and srcImage.inside(xSrc, ySrc):
-        var srcRgba = srcImage.getRgbaUnsafe(xSrc, ySrc)
-        if srcRgba.a == uint8(255):
-          destImage.putRgbaUnsafe(xDest, yDest, rgba)
-        elif srcRgba.a > uint8(0):
-          var destRgba = destImage.getRgbaUnsafe(xDest, yDest)
-          let a = float(srcRgba.a)/255.0
-          destRgba.r = uint8(float(destRgba.r) * (1-a) + float(rgba.r) * a)
-          destRgba.g = uint8(float(destRgba.g) * (1-a) + float(rgba.g) * a)
-          destRgba.b = uint8(float(destRgba.b) * (1-a) + float(rgba.b) * a)
-          destRgba.a = 255
-          destImage.putRgbaUnsafe(xDest, yDest, destRgba)
-
-proc blitMasked*(
-  destImage, fill, mask: Image
+proc draw*(
+  destImage, fill: Image, pos = vec2(0, 0), blendMode = Normal,
 ) =
-  ## Fast blit of src + fill * mask. Images must be same size.
-  assert destImage.width == fill.width and destImage.width == mask.width
-  assert destImage.height == fill.height and destImage.height == mask.height
-
-  for y in 0 ..< int(destImage.height):
-    for x in 0 ..< int(destImage.width):
-      var
-        fill = fill.getRgbaUnsafe(x, y)
-        mask = mask.getRgbaUnsafe(x, y)
-
-      if mask.a > 0:
-        var dest = destImage.getRgbaUnsafe(x, y)
-        fill.a = ((mask.a.uint32 * fill.a.uint32) div 255).uint8
-        let final = Normal.mix(dest, fill)
-
-        destImage.putRgbaUnsafe(x, y, final)
-
-proc blitMaskStack*(
-  destImage: Image, maskStack: seq[Image]
-) =
-  ## Fast blit of src + [a + b + c ...]. Images must be same size.
-  for mask in maskStack:
-    assert destImage.width == mask.width
-    assert destImage.height == mask.height
-
-    for y in 0 ..< int(destImage.height):
-      for x in 0 ..< int(destImage.width):
-        var
-          maskRgba = mask.getRgbaUnsafe(x, y)
-
-        if maskRgba.a != uint8(255):
-          var destRgba = destImage.getRgbaUnsafe(x, y)
-          let a = float(maskRgba.a)/255.0
-          destRgba.a = min(destRgba.a, maskRgba.a)
-          destImage.putRgbaUnsafe(x, y, destRgba)
-
-proc blitWithBlendMode*(
-  destImage, fill: Image, blendMode: BlendMode, pos: Vec2,
-) =
-  ## Fast blit of dest + fill using blend mode.
-  let
-    xDest = pos.x.int
-    yDest = pos.y.int
-  for y in 0 ..< int(fill.height):
-    for x in 0 ..< int(fill.width):
+  for y in 0 ..< fill.height:
+    for x in 0 ..< fill.width:
       let
         fillRgba = fill.getRgbaUnsafe(x, y)
-      if fillRgba.a > 0:
+      if blendMode == Mask or fillRgba.a > 0:
+        # TODO: Make unsafe
         let
-          # TODO: Make it use getRgbaUnsafe.
-          destRgba = destImage.getRgba(x + xDest, y + yDest)
+          destRgba = destImage.getRgba(x + pos.x.int, y + pos.y.int)
           rgba = blendMode.mix(destRgba, fillRgba)
-        destImage.putRgba(x + xDest, y + yDest, rgba)
+        destImage.putRgba(x + pos.x.int, y + pos.y.int, rgba)
 
 proc computeBounds(
   destImage, srcImage: Image, mat: Mat4, matInv: Mat4
@@ -513,6 +452,40 @@ proc computeBounds(
     xEnd = min(int max(boundsX), destImage.width)
     yEnd = min(int max(boundsY), destImage.height)
   return (xStart, yStart, xEnd, yEnd)
+
+proc draw*(destImage: Image, srcImage: Image, mat: Mat4, blendMode = Normal) =
+  ## Draws one image onto another using matrix with color blending.
+  var srcImage = srcImage
+  let
+    matInv = mat.inverse()
+    (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
+
+  var
+    # compute movement vectors
+    start = matInv * vec3(0.5, 0.5, 0)
+    stepX = matInv * vec3(1.5, 0.5, 0) - start
+    stepY = matInv * vec3(0.5, 1.5, 0) - start
+
+    minFilterBy2 = max(stepX.length, stepY.length)
+
+  while minFilterBy2 > 2.0:
+    srcImage = srcImage.minifyBy2()
+    start /= 2
+    stepX /= 2
+    stepY /= 2
+    minFilterBy2 /= 2
+
+  # fill the bounding rectangle
+  for y in yStart ..< yEnd:
+    for x in xStart ..< xEnd:
+      let srcV = start + stepX * float32(x) + stepY * float32(y)
+      if srcImage.inside(int srcV.x, int srcV.y):
+        let
+          srcRgba = srcImage.getRgbaSmooth(srcV.x - 0.5, srcV.y - 0.5)
+        let
+          destRgba = destImage.getRgbaUnsafe(x, y)
+          color = blendMode.mix(destRgba.color, srcRgba.color)
+        destImage.putRgbaUnsafe(x, y, color.rgba)
 
 proc roundPixelVec(v: Vec3): Vec2 {.inline.} =
   ## Rounds vector to pixel center.
@@ -568,57 +541,6 @@ proc invertColor*(image: Image) =
       rgba.b = 255 - rgba.b
       rgba.a = 255 - rgba.a
       image.putRgbaUnsafe(x, y, rgba)
-
-proc blit*(destImage, srcImage: Image, mat: Mat4) =
-  ## Blits one image onto another using matrix with alpha blending.
-  let
-    matInv = mat.inverse()
-    (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
-
-  # fill the bounding rectangle
-  for y in yStart ..< yEnd:
-    for x in xStart ..< xEnd:
-      let destV = vec3(float32(x) + 0.5, float32(y) + 0.5, 0)
-      let srcV = roundPixelVec(matInv * destV)
-      if srcImage.inside(int srcV.x, int srcV.y):
-        var rgba = srcImage.getRgbaUnsafe(int srcV.x, int srcV.y)
-        destImage.putRgbaUnsafe(x, y, rgba)
-
-proc blitWithAlpha*(destImage: Image, srcImage: Image, mat: Mat4) =
-  ## Blits one image onto another using matrix with alpha blending.
-  var srcImage = srcImage
-  let
-    matInv = mat.inverse()
-    (xStart, yStart, xEnd, yEnd) = computeBounds(destImage, srcImage, mat, matInv)
-
-  var
-    # compute movement vectors
-    start = matInv * vec3(0.5, 0.5, 0)
-    stepX = matInv * vec3(1.5, 0.5, 0) - start
-    stepY = matInv * vec3(0.5, 1.5, 0) - start
-
-    minFilterBy2 = max(stepX.length, stepY.length)
-
-  while minFilterBy2 > 2.0:
-    srcImage = srcImage.minifyBy2()
-    start /= 2
-    stepX /= 2
-    stepY /= 2
-    minFilterBy2 /= 2
-
-  const blendMode = Normal
-
-  # fill the bounding rectangle
-  for y in yStart ..< yEnd:
-    for x in xStart ..< xEnd:
-      let srcV = start + stepX * float32(x) + stepY * float32(y)
-      if srcImage.inside(int srcV.x, int srcV.y):
-        let
-          srcRgba = srcImage.getRgbaSmooth(srcV.x - 0.5, srcV.y - 0.5)
-        let
-          destRgba = destImage.getRgbaUnsafe(x, y)
-          color = blendMode.mix(destRgba.color, srcRgba.color)
-        destImage.putRgbaUnsafe(x, y, color.rgba)
 
 proc fill*(image: Image, rgba: ColorRgba) =
   ## Fills the image with a solid color.
@@ -1046,7 +968,7 @@ proc blur*(image: Image, radius: float32): Image =
 
 proc resize*(srcImage: Image, width, height: int): Image =
   result = newImage(width, height, srcImage.channels)
-  result.blitWithAlpha(
+  result.draw(
     srcImage,
     scaleMat(vec3(
       (width + 1).float / srcImage.width.float,
