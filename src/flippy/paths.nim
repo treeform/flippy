@@ -131,6 +131,13 @@ proc parsePath*(path: string): Path =
       of 'Z':
         finishCommand()
         command = End
+      # Punctuation
+      of '-', '+':
+        if number.len > 0 and number[^1] in {'e', 'E'}:
+          number &= c
+        else:
+          finishDigit()
+          number = $c
       of ' ', ',', '\r', '\n', '\t':
         finishDigit()
       else:
