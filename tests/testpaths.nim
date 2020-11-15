@@ -3,6 +3,12 @@ import chroma, flippy, flippy/paths, os, osproc, vmath
 setCurrentDir(getCurrentDir() / "tests")
 
 block:
+  echo "pathWithE"
+  let image = newImage(100, 100, 4)
+  let pathStr = "M 0.1E-10 0.1e10"
+  let path = parsePath(pathStr)
+
+block:
   echo "pathStroke1"
   let image = newImage(100, 100, 4)
   let pathStr = "M 10 10 L 90 90"

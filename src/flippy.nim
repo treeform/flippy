@@ -153,7 +153,6 @@ proc save*(image: Image, filePath: string) =
   image.save()
 
 {.push checks: off, stacktrace: off.}
-{.pop.}
 
 proc inside*(image: Image, x, y: int): bool {.inline.} =
   ## Returns true if (x, y) is inside the image.
@@ -491,9 +490,7 @@ proc draw*(destImage: Image, srcImage: Image, mat: Mat4, blendMode = Normal) =
           color = blendMode.mix(destRgba.color, srcRgba.color)
         destImage.putRgbaUnsafe(x, y, color.rgba)
 
-proc roundPixelVec(v: Vec3): Vec2 {.inline.} =
-  ## Rounds vector to pixel center.
-  vec2(round(v.x), round(v.y))
+{.pop.}
 
 proc getSubImage*(image: Image, x, y, w, h: int): Image =
   ## Gets a sub image of the main image.
