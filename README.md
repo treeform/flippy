@@ -7,6 +7,8 @@ Flippy is a simple 2d image and drawing library.
 Basic usage:
 
 ```nim
+import flippy, vmath, chroma
+
 # load an image
 var image = loadImage("tests/lenna.png")
 # print it out
