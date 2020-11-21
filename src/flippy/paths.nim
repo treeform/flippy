@@ -799,10 +799,11 @@ proc arcTo*(path: Path, x1, y1, x2, y2, r: float32) =
   #   path.commands.add(PathCommand(kind: Line, numbers: @[x1, y1]))
   #   path.at.x = x1
   #   path.at.y = y1
-
+  var r = r
   if r < 0:
     # Is the radius negative? Error.
-    raise newException(ValueError, "negative radius: " & $r)
+    r = -r
+    #raise newException(ValueError, "negative radius: " & $r)
 
   if path.commands.len == 0:
     # Is this path empty? Move to (x1,y1).

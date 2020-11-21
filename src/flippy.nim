@@ -919,6 +919,15 @@ proc colorAlpha*(image: Image, color: Color) =
       c.a = a
       image.putRgbaUnsafe(x, y, c.rgba)
 
+proc applyOpacity*(image: Image, opacity: float32) =
+  ## Multiplies alpha of the image by opacity.
+  let op = (255 * opacity).uint8
+  for y in 0 ..< image.height:
+    for x in 0 ..< image.width:
+      var rgba = image.getRgbaUnsafe(x, y)
+      rgba.a = ((rgba.a.uint32 * op.uint32) div 255).clamp(0, 255).uint8
+      image.putRgbaUnsafe(x, y, rgba)
+
 proc blur*(image: Image, radius: float32): Image =
   ## Applies Gaussian blur to the image given a radius.
   let radius = (radius).int
@@ -942,27 +951,39 @@ proc blur*(image: Image, radius: float32): Image =
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
       var c: Color
+      var totalA = 0.0
       for xb in -radius .. radius:
         let c2 = image.getRgba(x + xb, y).color
         let a = lookup[xb + radius]
-        c.r += c2.r * a
-        c.g += c2.g * a
-        c.b += c2.b * a
+        let aa = c2.a * a
+        totalA += aa
+        c.r += c2.r * aa
+        c.g += c2.g * aa
+        c.b += c2.b * aa
         c.a += c2.a * a
-      blurX.putRgbaUnsafe(x, y, c.rgba)
+      c.r = c.r / totalA
+      c.g = c.g / totalA
+      c.b = c.b / totalA
+      blurX.putRgbaUnsafe(x, y, c.rgba )
 
   # Blur in the Y direction.
   var blurY = newImage(image.width, image.height, image.channels)
   for y in 0 ..< image.height:
     for x in 0 ..< image.width:
       var c: Color
+      var totalA = 0.0
       for yb in -radius .. radius:
         let c2 = blurX.getRgba(x, y + yb).color
         let a = lookup[yb + radius]
-        c.r += c2.r * a
-        c.g += c2.g * a
-        c.b += c2.b * a
+        let aa = c2.a * a
+        totalA += aa
+        c.r += c2.r * aa
+        c.g += c2.g * aa
+        c.b += c2.b * aa
         c.a += c2.a * a
+      c.r = c.r / totalA
+      c.g = c.g / totalA
+      c.b = c.b / totalA
       blurY.putRgbaUnsafe(x, y, c.rgba)
 
   return blurY
@@ -1025,6 +1046,49 @@ proc outlineBorder2*(image: Image, borderPx: int): Image =
       var rgba = image.getRgba(x, y)
       if rgba.a > 0.uint8:
         result.putRgba(x, y, rgba(0, 0, 0, 255 - rgba.a))
+
+proc shift(image: Image, offset: Vec2): Image =
+  ## Shifts the image by offset.
+  result = newImage(image.width, image.height, image.channels)
+  result.draw(image, offset)
+
+proc spread(image: Image, spread: float32): Image =
+  ## Grows the image as a mask by spread.
+  result = newImage(image.width, image.height, image.channels)
+  assert spread > 0
+  for y in 0 ..< result.height:
+    for x in 0 ..< result.width:
+      var maxAlpha = 0.uint8
+      for bx in -spread.int .. spread.int:
+        for by in -spread.int .. spread.int:
+          #if vec2(bx.float32, by.float32).length < spread:
+          let alpha = image.getRgba(x + bx, y + by).a
+          if alpha > maxAlpha:
+            maxAlpha = alpha
+          if maxAlpha == 255:
+            break
+        if maxAlpha == 255:
+            break
+      result.putRgba(x, y, rgba(0, 0, 0, maxAlpha))
+
+proc shadow*(
+  mask: Image,
+  offset: Vec2,
+  spread: float,
+  blur: float32,
+  color: Color
+): Image =
+  ## Create a shadow of the image with the offset, spread and blur.
+  var shadow = mask
+  if offset != vec2(0, 0):
+    shadow = shadow.shift(offset)
+  if spread > 0:
+    shadow = shadow.spread(spread)
+  if blur > 0:
+    shadow = shadow.blur(blur)
+  result = newImage(mask.width, mask.height, 4)
+  result.fill(color.rgba)
+  result.draw(shadow, blendMode = Mask)
 
 func width*(flippy: Flippy): int =
   flippy.mipmaps[0].width
