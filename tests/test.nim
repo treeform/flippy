@@ -1,4 +1,4 @@
-import chroma, flippy, os, osproc, vmath
+import chroma, flippy, os, osproc, vmath, bumpy
 
 setCurrentDir(getCurrentDir() / "tests")
 
