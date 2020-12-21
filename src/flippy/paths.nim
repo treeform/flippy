@@ -394,7 +394,7 @@ proc commandsToPolygons*(commands: seq[PathCommand]): seq[seq[Vec2]] =
         let steps = int(abs(arc.delta)/PI*180/5)
         let step = arc.delta / steps.float32
         var a = arc.theta
-        var rotMat = rotationMat3(arc.rotation)
+        var rotMat = rotationMat3(-arc.rotation)
         for i in 0 .. steps:
           # polygon.add(polygon[^1])
           polygon.add(rotMat * vec2(

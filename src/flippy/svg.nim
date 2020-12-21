@@ -1,7 +1,7 @@
 ## Load and Save SVG files.
 
 import chroma, flippy, flippy/paths, vmath, xmlparser, xmltree,
-  strutils, strutils, chroma/blends
+  strutils, strutils, flippy/blends
 
 var tmp: Image
 

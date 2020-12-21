@@ -1,4 +1,4 @@
-import chroma, chroma/blends, math, os, streams, strformat, supersnappy, vmath, bumpy
+import chroma, flippy/blends, math, os, streams, strformat, supersnappy, vmath, bumpy
 
 when defined(useStb):
   import stb_image/read as stbi
