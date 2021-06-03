@@ -1,5 +1,7 @@
 # Flippy
 
+⚠️⚠️⚠️ Flippy is not longer developed, all development has moved to [pixie](https://github.com/treeform/pixie). ⚠️⚠️⚠️
+
 ![Flippy Logo](docs/flippyLogo.png)
 
 Flippy is a simple 2d image and drawing library.
