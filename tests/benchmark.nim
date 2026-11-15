@@ -1,4 +1,4 @@
-import chroma, flippy, std/monotimes, strformat, times, vmath
+import bumpy, chroma, flippy, std/monotimes, strformat, times, vmath
 
 proc getTicks*(): int =
   getMonoTime().ticks.int
