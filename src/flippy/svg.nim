@@ -19,12 +19,12 @@ proc draw(img: Image, matStack: var seq[Mat3], xml: XmlNode) =
           let arr = transform[7..^2].split(",")
           assert arr.len == 6
           var m = mat3()
-          m[0] = parseFloat(arr[0])
-          m[1] = parseFloat(arr[1])
-          m[3] = parseFloat(arr[2])
-          m[4] = parseFloat(arr[3])
-          m[6] = parseFloat(arr[4])
-          m[7] = parseFloat(arr[5])
+          m[0, 0] = parseFloat(arr[0]).float32
+          m[0, 1] = parseFloat(arr[1]).float32
+          m[1, 0] = parseFloat(arr[2]).float32
+          m[1, 1] = parseFloat(arr[3]).float32
+          m[2, 0] = parseFloat(arr[4]).float32
+          m[2, 1] = parseFloat(arr[5]).float32
           matStack.add(matStack[^1] * m)
         else:
           echo "Unsupported transform: " & xml.tag

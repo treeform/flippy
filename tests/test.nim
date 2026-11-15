@@ -56,22 +56,22 @@ block:
 
   main.draw(
     redSquare,
-    translate(vec3(32, 32, 0)) * rotateZ(PI*0) * translate(vec3(-w/2, -h/2, 0))
+    translate(vec3(32, 32, 0)) * rotateZ((PI*0).float32) * translate(vec3(-w/2, -h/2, 0))
   )
 
   main.draw(
     redSquare,
-    translate(vec3(224, 32, 0)) * rotateZ(PI*0.5) * translate(vec3(-w/2, -h/2, 0))
+    translate(vec3(224, 32, 0)) * rotateZ((PI*0.5).float32) * translate(vec3(-w/2, -h/2, 0))
   )
 
   main.draw(
     redSquare,
-    translate(vec3(224, 224, 0)) * rotateZ(PI*1.0) * translate(vec3(-w/2, -h/2, 0))
+    translate(vec3(224, 224, 0)) * rotateZ((PI*1.0).float32) * translate(vec3(-w/2, -h/2, 0))
   )
 
   main.draw(
     redSquare,
-    translate(vec3(32, 224, 0)) * rotateZ(PI*1.5) * translate(vec3(-w/2, -h/2, 0))
+    translate(vec3(32, 224, 0)) * rotateZ((PI*1.5).float32) * translate(vec3(-w/2, -h/2, 0))
   )
 
   main.save("edgesMatrix.png")
@@ -172,18 +172,18 @@ block:
   var lenna = loadImage("lenna.png")
   main.draw(
     lenna,
-    scale(vec3(15, 15, 1)) * rotateZ(0.3)
+    scale(vec3(15, 15, 1)) * rotateZ((0.3).float32)
   )
   main.draw(
     lenna,
-    scale(vec3(0.1, 0.1, 1)) * rotateZ(-0.3)
+    scale(vec3(0.1, 0.1, 1)) * rotateZ((-0.3).float32)
   )
 
   var redSquare = loadImage("redsquare.png")
   redSquare.alphaBleed()
   main.draw(
     redSquare,
-    scale(vec3(1, 1, 1)) * rotateZ(-0.3) * translate(vec3(100, 100, 0))
+    scale(vec3(1, 1, 1)) * rotateZ((-0.3).float32) * translate(vec3(100, 100, 0))
   )
 
   var bluestar = loadImage("bluestar.png")
@@ -191,7 +191,7 @@ block:
     bluestar,
     translate(vec3(-50, -50, 0)) *
     scale(vec3(2, 2, 1)) *
-    rotateZ(-0.3) *
+    rotateZ((-0.3).float32) *
     translate(vec3(80, 20, 0))
   )
 
@@ -216,22 +216,22 @@ block:
 
   main.draw(
     redSquare,
-    translate(vec3(64, 64, 0)) * rotateZ(PI*0) * translate(vec3(-w/2, -h/2, 0))
+    translate(vec3(64, 64, 0)) * rotateZ((PI*0).float32) * translate(vec3(-w/2, -h/2, 0))
   )
 
   main.draw(
     redSquare,
-    translate(vec3(192, 64, 0)) * rotateZ(PI*0.5) * translate(vec3(-w/2, -h/2, 0))
+    translate(vec3(192, 64, 0)) * rotateZ((PI*0.5).float32) * translate(vec3(-w/2, -h/2, 0))
   )
 
   main.draw(
     redSquare,
-    translate(vec3(192, 192, 0)) * rotateZ(PI*1.0) * translate(vec3(-w/2, -h/2, 0))
+    translate(vec3(192, 192, 0)) * rotateZ((PI*1.0).float32) * translate(vec3(-w/2, -h/2, 0))
   )
 
   main.draw(
     redSquare,
-    translate(vec3(64, 192, 0)) * rotateZ(PI*1.5) * translate(vec3(-w/2, -h/2, 0))
+    translate(vec3(64, 192, 0)) * rotateZ((PI*1.5).float32) * translate(vec3(-w/2, -h/2, 0))
   )
 
   main.save("blit1.png")

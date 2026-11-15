@@ -992,7 +992,7 @@ proc resize*(srcImage: Image, width, height: int): Image =
   result = newImage(width, height, srcImage.channels)
   result.draw(
     srcImage,
-    scaleMat(vec3(
+    scale(vec3(
       (width + 1).float / srcImage.width.float,
       (height + 1).float / srcImage.height.float,
       1
